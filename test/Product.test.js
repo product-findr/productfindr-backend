@@ -90,4 +90,29 @@ describe("Product", function () {
       "Product owner cannot upvote their own product"
     );
   });
+
+  it("Should get Listed Products", async function () {
+    const details = {
+      productName: "Test Product",
+      tagLine: "This is a tagline",
+      productLink: "http://product.link",
+      twitterLink: "http://twitter.link",
+      description: "This is a test product",
+      isOpenSource: true,
+      category: "category",
+      thumbNail: "http://thumbnail.link",
+      mediaFile: "http://media.file",
+      loomLink: "http://loom.link",
+      workedWithTeam: true,
+      teamMembersInput: "team member",
+      pricingOption: "free",
+      offer: "offer details",
+      promoCode: "promo code",
+      expirationDate: "2023-12-31",
+      betaTestingLink: "http://beta.testing/link",
+    };
+    await product.registerProduct(owner.address, details);
+    const listedProducts = await product.getListedProducts();
+    expect(listedProducts.length).to.equal(1);
+  });
 });

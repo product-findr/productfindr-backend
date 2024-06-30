@@ -67,11 +67,12 @@ contract ProductFindr is Ownable {
         return productContract.getProduct(_productId);
     }
 
-    function getListedProducts(
-        uint256 start,
-        uint256 count
-    ) public view returns (Product.ProductInfo[] memory) {
-        return productContract.getListedProducts(start, count);
+    function getListedProducts()
+        public
+        view
+        returns (Product.ProductInfo[] memory)
+    {
+        return productContract.getListedProducts();
     }
 
     function addReview(

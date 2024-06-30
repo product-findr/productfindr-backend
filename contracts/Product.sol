@@ -149,33 +149,59 @@ contract Product is Ownable {
         return block.timestamp >= product.timestamp + 24 hours;
     }
 
-    function getListedProducts(
-        uint256 start,
-        uint256 count
-    ) public view returns (ProductInfo[] memory) {
+    // function getListedProducts(
+    //     uint256 start,
+    //     uint256 count
+    // ) public view returns (ProductInfo[] memory) {
+    //     uint256 listedCount = 0;
+    //     for (
+    //         uint256 i = start;
+    //         i < start + count && i <= _productIdCounter;
+    //         i++
+    //     ) {
+    //         if (canBeListed(i)) {
+    //             listedCount++;
+    //         }
+    //     }
+
+    //     ProductInfo[] memory listedProducts = new ProductInfo[](listedCount);
+    //     uint256 index = 0;
+    //     for (
+    //         uint256 i = start;
+    //         i < start + count && i <= _productIdCounter;
+    //         i++
+    //     ) {
+    //         if (canBeListed(i)) {
+    //             listedProducts[index] = products[i];
+    //             index++;
+    //         }
+    //     }
+    //     return listedProducts;
+    // }
+
+    function getListedProducts() public view returns (ProductInfo[] memory) {
+        uint256 totalProducts = _productIdCounter;
         uint256 listedCount = 0;
-        for (
-            uint256 i = start;
-            i < start + count && i <= _productIdCounter;
-            i++
-        ) {
+
+        // Countew how many products can be listed
+        for (uint256 i = 1; i <= totalProducts; i++) {
             if (canBeListed(i)) {
                 listedCount++;
             }
         }
 
+        // Create an array to hold the listed products
         ProductInfo[] memory listedProducts = new ProductInfo[](listedCount);
         uint256 index = 0;
-        for (
-            uint256 i = start;
-            i < start + count && i <= _productIdCounter;
-            i++
-        ) {
+
+        // Populate the array with the listed products
+        for (uint256 i = 1; i <= totalProducts; i++) {
             if (canBeListed(i)) {
                 listedProducts[index] = products[i];
                 index++;
             }
         }
+
         return listedProducts;
     }
 }

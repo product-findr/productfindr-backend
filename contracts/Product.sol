@@ -91,12 +91,14 @@ contract Product is Ownable {
     ) public {
         _productIdCounter++;
         uint256 productId = _productIdCounter;
+        bool betaTestingAvailable = bytes(details.betaTestingLink).length > 0;
+
         products[productId] = ProductInfo({
             id: productId,
             owner: _owner,
             details: details,
             upvotes: 0,
-            betaTestingAvailable: bytes(details.betaTestingLink).length > 0,
+            betaTestingAvailable: betaTestingAvailable,
             timestamp: block.timestamp
         });
         emit ProductRegistered(
@@ -143,9 +145,6 @@ contract Product is Ownable {
         uint256 _productId
     ) public view productExists(_productId) returns (bool) {
         ProductInfo memory product = products[_productId];
-        if (product.betaTestingAvailable) {
-            return true;
-        }
         return block.timestamp >= product.timestamp + 24 hours;
     }
 
@@ -157,7 +156,7 @@ contract Product is Ownable {
         uint256 totalProducts = _productIdCounter;
         uint256 listedCount = 0;
 
-        // Countew how many products can be listed
+        // Count how many products can be listed
         for (uint256 i = 1; i <= totalProducts; i++) {
             if (canBeListed(i)) {
                 listedCount++;
@@ -182,10 +181,8 @@ contract Product is Ownable {
     function getListedProducts() public view returns (ProductInfo[] memory) {
         uint256 totalProducts = _productIdCounter;
 
-        // Create an array to hold the listed products
         ProductInfo[] memory listedProducts = new ProductInfo[](totalProducts);
 
-        // Populate the array with the listed products
         for (uint256 i = 1; i <= totalProducts; i++) {
             listedProducts[i - 1] = products[i];
         }

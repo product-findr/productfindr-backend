@@ -75,6 +75,14 @@ contract ProductFindr is Ownable {
         return productContract.getListedProducts();
     }
 
+    function getListedProductsAvailable()
+        public
+        view
+        returns (Product.ProductInfo[] memory)
+    {
+        return productContract.getListedProductsAvailable();
+    }
+
     function addReview(
         address _reviewer,
         uint256 _productId,

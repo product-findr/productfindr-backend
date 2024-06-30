@@ -112,7 +112,12 @@ describe("Product", function () {
       betaTestingLink: "http://beta.testing/link",
     };
     await product.registerProduct(owner.address, details);
+    await product.registerProduct(owner.address, details);
+    await product.registerProduct(owner.address, details);
+
     const listedProducts = await product.getListedProducts();
-    expect(listedProducts.length).to.equal(1);
+
+    console.log(listedProducts);
+    expect(listedProducts.length).to.equal(3);
   });
 });

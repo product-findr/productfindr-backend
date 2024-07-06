@@ -2,6 +2,7 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "./BetaTestingDetailsManager.sol";
 
 contract Product is Ownable {
     struct ProductDetails {
@@ -37,6 +38,8 @@ contract Product is Ownable {
     mapping(uint256 => ProductInfo) public products;
     mapping(uint256 => mapping(address => bool)) public hasUpvoted;
 
+    BetaTestingDetailsManager public betaTestingManager;
+
     event ProductRegistered(
         uint256 indexed productId,
         address indexed owner,
@@ -51,7 +54,12 @@ contract Product is Ownable {
         string betaTestingLink
     );
 
-    constructor(address initialOwner) Ownable(initialOwner) {}
+    constructor(
+        address initialOwner,
+        address _betaTestingManager
+    ) Ownable(initialOwner) {
+        betaTestingManager = BetaTestingDetailsManager(_betaTestingManager);
+    }
 
     modifier productExists(uint256 _productId) {
         require(
@@ -87,11 +95,20 @@ contract Product is Ownable {
 
     function registerProduct(
         address _owner,
-        ProductDetails memory details
+        ProductDetails memory details,
+        bool betaTestingAvailable,
+        BetaTestingDetailsManager.BetaTestingDetails memory betaDetails
     ) public {
         _productIdCounter++;
         uint256 productId = _productIdCounter;
-        bool betaTestingAvailable = bytes(details.betaTestingLink).length > 0;
+
+        if (betaTestingAvailable) {
+            require(
+                bytes(details.betaTestingLink).length > 0,
+                "Beta testing link required"
+            );
+            betaTestingManager.setBetaTestingDetails(productId, betaDetails);
+        }
 
         products[productId] = ProductInfo({
             id: productId,
@@ -101,6 +118,7 @@ contract Product is Ownable {
             betaTestingAvailable: betaTestingAvailable,
             timestamp: block.timestamp
         });
+
         emit ProductRegistered(
             productId,
             _owner,

@@ -5,11 +5,13 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "./Product.sol";
 import "./Comment.sol";
 import "./Review.sol";
+import "./BetaTestingDetailsManager.sol";
 
 contract ProductFindr is Ownable {
     Product private productContract;
     Comment private commentContract;
     Review private reviewContract;
+    BetaTestingDetailsManager private betaTestingManager;
 
     mapping(address => uint256) public userReputation;
 
@@ -19,11 +21,15 @@ contract ProductFindr is Ownable {
         address _productAddress,
         address _commentAddress,
         address _reviewAddress,
+        address _betaTestingManagerAddress,
         address initialOwner
     ) Ownable(initialOwner) {
         productContract = Product(_productAddress);
         commentContract = Comment(_commentAddress);
         reviewContract = Review(_reviewAddress);
+        betaTestingManager = BetaTestingDetailsManager(
+            _betaTestingManagerAddress
+        );
     }
 
     modifier reviewExists(uint256 _productId, uint256 _reviewId) {
@@ -36,9 +42,16 @@ contract ProductFindr is Ownable {
 
     function registerProduct(
         address _owner,
-        Product.ProductDetails memory details
+        Product.ProductDetails memory details,
+        bool betaTestingAvailable,
+        BetaTestingDetailsManager.BetaTestingDetails memory betaDetails
     ) public {
-        productContract.registerProduct(_owner, details);
+        productContract.registerProduct(
+            _owner,
+            details,
+            betaTestingAvailable,
+            betaDetails
+        );
         userReputation[msg.sender]++;
         emit UserReputationUpdated(msg.sender, userReputation[msg.sender]);
     }

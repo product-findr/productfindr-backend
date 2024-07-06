@@ -9,8 +9,17 @@ describe("Comment", function () {
     const [owner, otherUser, commenter1, commenter2] =
       await ethers.getSigners();
 
+    const BetaTestingDetailsManager = await ethers.getContractFactory(
+      "BetaTestingDetailsManager"
+    );
+    const betaTestingManager = await BetaTestingDetailsManager.deploy();
+    await betaTestingManager.waitForDeployment();
+
     const Product = await ethers.getContractFactory("Product");
-    const product = await Product.deploy(owner.address);
+    const product = await Product.deploy(
+      owner.address,
+      betaTestingManager.target
+    );
     await product.waitForDeployment();
 
     const Comment = await ethers.getContractFactory("Comment");
@@ -20,6 +29,7 @@ describe("Comment", function () {
     return {
       product,
       comment,
+      betaTestingManager,
       owner,
       otherUser,
       commenter1,
@@ -27,7 +37,27 @@ describe("Comment", function () {
     };
   }
 
-  const productDetails = {
+  const productDetailsWithoutBetaTesting = {
+    productName: "Test Product",
+    tagLine: "This is a tagline",
+    productLink: "http://product.link",
+    twitterLink: "http://twitter.link",
+    description: "This is a test product",
+    isOpenSource: true,
+    category: "category",
+    thumbNail: "http://thumbnail.link",
+    mediaFile: "http://media.file",
+    loomLink: "http://loom.link",
+    workedWithTeam: true,
+    teamMembersInput: "team member",
+    pricingOption: "free",
+    offer: "offer details",
+    promoCode: "promo code",
+    expirationDate: "2023-12-31",
+    betaTestingLink: "",
+  };
+
+  const productDetailsWithBetaTesting = {
     productName: "Test Product",
     tagLine: "This is a tagline",
     productLink: "http://product.link",
@@ -47,11 +77,48 @@ describe("Comment", function () {
     betaTestingLink: "http://beta.testing/link",
   };
 
-  it("Should allow a user to comment on a product", async function () {
+  const betaTestingDetails = {
+    targetNumbersOfTester: 100,
+    testingGoal: "Test Goal",
+    goals: ["Goal 1", "Goal 2"],
+    startingDate: Math.floor(Date.now() / 1000), // current timestamp in seconds
+    endingDate: Math.floor(Date.now() / 1000) + 86400, // current timestamp + 1 day
+  };
+
+  it("Should allow a user to comment on a product without beta testing", async function () {
     const { product, comment, owner, commenter1 } = await loadFixture(
       deployContractsFixture
     );
-    await product.connect(owner).registerProduct(owner.address, productDetails);
+    const betaTestingAvailable = false;
+    await product
+      .connect(owner)
+      .registerProduct(
+        owner.address,
+        productDetailsWithoutBetaTesting,
+        betaTestingAvailable,
+        betaTestingDetails
+      );
+    await comment.connect(commenter1).commentOnProduct(1, "Great product!");
+
+    const singleComment = await comment.getComment(1, 0);
+
+    expect(singleComment.content).to.equal("Great product!");
+    expect(singleComment.commenter).to.equal(commenter1.address);
+  });
+
+  it("Should allow a user to comment on a product with beta testing", async function () {
+    const { product, comment, owner, commenter1 } = await loadFixture(
+      deployContractsFixture
+    );
+    const betaTestingAvailable = true;
+    await product
+      .connect(owner)
+      .registerProduct(
+        owner.address,
+        productDetailsWithBetaTesting,
+        betaTestingAvailable,
+        betaTestingDetails
+      );
     await comment.connect(commenter1).commentOnProduct(1, "Great product!");
 
     const singleComment = await comment.getComment(1, 0);
@@ -63,7 +130,15 @@ describe("Comment", function () {
   it("Should get the number of comments for a product", async function () {
     const { product, comment, owner, commenter1, commenter2 } =
       await loadFixture(deployContractsFixture);
-    await product.connect(owner).registerProduct(owner.address, productDetails);
+    const betaTestingAvailable = false;
+    await product
+      .connect(owner)
+      .registerProduct(
+        owner.address,
+        productDetailsWithoutBetaTesting,
+        betaTestingAvailable,
+        betaTestingDetails
+      );
     await comment.connect(commenter1).commentOnProduct(1, "Great product!");
     await comment.connect(commenter2).commentOnProduct(1, "I love it!");
 
@@ -74,7 +149,15 @@ describe("Comment", function () {
   it("Should get a specific comment by ID", async function () {
     const { product, comment, owner, commenter1, commenter2 } =
       await loadFixture(deployContractsFixture);
-    await product.connect(owner).registerProduct(owner.address, productDetails);
+    const betaTestingAvailable = false;
+    await product
+      .connect(owner)
+      .registerProduct(
+        owner.address,
+        productDetailsWithoutBetaTesting,
+        betaTestingAvailable,
+        betaTestingDetails
+      );
     await comment.connect(commenter1).commentOnProduct(1, "Great product!");
     await comment.connect(commenter2).commentOnProduct(1, "I love it!");
 
@@ -88,7 +171,15 @@ describe("Comment", function () {
     const { product, comment, owner, commenter1 } = await loadFixture(
       deployContractsFixture
     );
-    await product.connect(owner).registerProduct(owner.address, productDetails);
+    const betaTestingAvailable = false;
+    await product
+      .connect(owner)
+      .registerProduct(
+        owner.address,
+        productDetailsWithoutBetaTesting,
+        betaTestingAvailable,
+        betaTestingDetails
+      );
     await comment.connect(commenter1).commentOnProduct(1, "Great product!");
 
     const commenterAddress = await comment.getCommenter(1, 0);

@@ -9,8 +9,12 @@ describe("ProductFindr", function () {
     const [owner, otherUser, commenter1, commenter2, reviewer1, reviewer2] =
       await ethers.getSigners();
 
+    const BetaTestingDetailsManager = await ethers.getContractFactory("BetaTestingDetailsManager");
+    const betaTestingManager = await BetaTestingDetailsManager.deploy();
+    await betaTestingManager.waitForDeployment();
+
     const Product = await ethers.getContractFactory("Product");
-    const product = await Product.deploy(owner.address);
+    const product = await Product.deploy(owner.address, betaTestingManager.target);
     await product.waitForDeployment();
 
     const Comment = await ethers.getContractFactory("Comment");
@@ -26,6 +30,7 @@ describe("ProductFindr", function () {
       product.target,
       comment.target,
       review.target,
+      betaTestingManager.target,
       owner.address
     );
     await productFindr.waitForDeployment();
@@ -37,6 +42,7 @@ describe("ProductFindr", function () {
       comment,
       review,
       productFindr,
+      betaTestingManager,
       owner,
       otherUser,
       commenter1,
@@ -46,7 +52,7 @@ describe("ProductFindr", function () {
     };
   }
 
-  const productDetails = {
+  const productDetailsWithoutBetaTesting = {
     productName: "Test Product",
     tagLine: "This is a tagline",
     productLink: "http://product.link",
@@ -63,16 +69,59 @@ describe("ProductFindr", function () {
     offer: "offer details",
     promoCode: "promo code",
     expirationDate: "2023-12-31",
-    betaTestingLink: "http://beta.testing/link",
+    betaTestingLink: ""
   };
 
-  it("Should register a new product", async function () {
+  const productDetailsWithBetaTesting = {
+    productName: "Test Product",
+    tagLine: "This is a tagline",
+    productLink: "http://product.link",
+    twitterLink: "http://twitter.link",
+    description: "This is a test product",
+    isOpenSource: true,
+    category: "category",
+    thumbNail: "http://thumbnail.link",
+    mediaFile: "http://media.file",
+    loomLink: "http://loom.link",
+    workedWithTeam: true,
+    teamMembersInput: "team member",
+    pricingOption: "free",
+    offer: "offer details",
+    promoCode: "promo code",
+    expirationDate: "2023-12-31",
+    betaTestingLink: "http://beta.testing/link"
+  };
+
+  const betaTestingDetails = {
+    targetNumbersOfTester: 100,
+    testingGoal: "Test Goal",
+    goals: ["Goal 1", "Goal 2"],
+    startingDate: Math.floor(Date.now() / 1000), // current timestamp in seconds
+    endingDate: Math.floor(Date.now() / 1000) + 86400 // current timestamp + 1 day
+  };
+
+  it("Should register a new product without beta testing", async function () {
     const { productFindr, product, otherUser } = await loadFixture(
       deployContractsFixture
     );
+    const betaTestingAvailable = false;
     await productFindr
       .connect(otherUser)
-      .registerProduct(otherUser.address, productDetails);
+      .registerProduct(otherUser.address, productDetailsWithoutBetaTesting, betaTestingAvailable, betaTestingDetails);
+    const productInfo = await product.getProduct(1);
+
+    expect(productInfo.details.productName).to.equal("Test Product");
+    expect(productInfo.owner).to.equal(otherUser.address);
+  });
+
+  it("Should register a new product with beta testing", async function () {
+    const { productFindr, product, otherUser } = await loadFixture(
+      deployContractsFixture
+    );
+    const betaTestingAvailable = true;
+    await productFindr
+      .connect(otherUser)
+      .registerProduct(otherUser.address, productDetailsWithBetaTesting, betaTestingAvailable, betaTestingDetails);
     const productInfo = await product.getProduct(1);
 
     expect(productInfo.details.productName).to.equal("Test Product");
@@ -83,9 +132,10 @@ describe("ProductFindr", function () {
     const { productFindr, product, owner, otherUser } = await loadFixture(
       deployContractsFixture
     );
+    const betaTestingAvailable = false;
     await productFindr
       .connect(owner)
-      .registerProduct(owner.address, productDetails);
+      .registerProduct(owner.address, productDetailsWithoutBetaTesting, betaTestingAvailable, betaTestingDetails);
     await productFindr.connect(otherUser).upvoteProduct(1, otherUser.address);
     const productInfo = await product.getProduct(1);
 
@@ -94,9 +144,10 @@ describe("ProductFindr", function () {
 
   it("Should not allow product owner to upvote their own product", async function () {
     const { productFindr, owner } = await loadFixture(deployContractsFixture);
+    const betaTestingAvailable = false;
     await productFindr
       .connect(owner)
-      .registerProduct(owner.address, productDetails);
+      .registerProduct(owner.address, productDetailsWithoutBetaTesting, betaTestingAvailable, betaTestingDetails);
     await expect(
       productFindr.connect(owner).upvoteProduct(1, owner.address)
     ).to.be.revertedWith("Product owner cannot upvote their own product");
@@ -106,9 +157,10 @@ describe("ProductFindr", function () {
     const { productFindr, owner, commenter1 } = await loadFixture(
       deployContractsFixture
     );
+    const betaTestingAvailable = false;
     await productFindr
       .connect(owner)
-      .registerProduct(owner.address, productDetails);
+      .registerProduct(owner.address, productDetailsWithoutBetaTesting, betaTestingAvailable, betaTestingDetails);
     await productFindr
       .connect(commenter1)
       .commentOnProduct(1, "Great product!");
@@ -121,9 +173,10 @@ describe("ProductFindr", function () {
     const { productFindr, owner, commenter1, commenter2 } = await loadFixture(
       deployContractsFixture
     );
+    const betaTestingAvailable = false;
     await productFindr
       .connect(owner)
-      .registerProduct(owner.address, productDetails);
+      .registerProduct(owner.address, productDetailsWithoutBetaTesting, betaTestingAvailable, betaTestingDetails);
     await productFindr
       .connect(commenter1)
       .commentOnProduct(1, "Great product!");
@@ -139,12 +192,13 @@ describe("ProductFindr", function () {
     const { productFindr, owner, reviewer1 } = await loadFixture(
       deployContractsFixture
     );
+    const betaTestingAvailable = false;
     await productFindr
       .connect(owner)
-      .registerProduct(owner.address, productDetails);
+      .registerProduct(owner.address, productDetailsWithoutBetaTesting, betaTestingAvailable, betaTestingDetails);
     await productFindr
       .connect(reviewer1)
-      .addReview(reviewer1, 1, "Great product!", 5);
+      .addReview(reviewer1.address, 1, "Great product!", 5);
 
     const reviews = await productFindr.getReviews(1);
     expect(reviews.length).to.equal(1);
@@ -156,15 +210,16 @@ describe("ProductFindr", function () {
     const { productFindr, owner, reviewer1, reviewer2 } = await loadFixture(
       deployContractsFixture
     );
+    const betaTestingAvailable = false;
     await productFindr
       .connect(owner)
-      .registerProduct(owner.address, productDetails);
+      .registerProduct(owner.address, productDetailsWithoutBetaTesting, betaTestingAvailable, betaTestingDetails);
     await productFindr
       .connect(reviewer1)
-      .addReview(reviewer1, 1, "Great product!", 5);
+      .addReview(reviewer1.address, 1, "Great product!", 5);
     await productFindr
       .connect(reviewer2)
-      .addReview(reviewer2, 1, "I love it!", 4);
+      .addReview(reviewer2.address, 1, "I love it!", 4);
 
     const singleReview = await productFindr.getReview(1, 1);
     expect(singleReview.content).to.equal("I love it!");
@@ -175,12 +230,13 @@ describe("ProductFindr", function () {
     const { productFindr, owner, reviewer1 } = await loadFixture(
       deployContractsFixture
     );
+    const betaTestingAvailable = false;
     await productFindr
       .connect(owner)
-      .registerProduct(owner.address, productDetails);
+      .registerProduct(owner.address, productDetailsWithoutBetaTesting, betaTestingAvailable, betaTestingDetails);
     await productFindr
       .connect(reviewer1)
-      .addReview(reviewer1, 1, "Great product!", 5);
+      .addReview(reviewer1.address, 1, "Great product!", 5);
 
     const reviewerAddress = await productFindr.getReviewer(1, 0);
     expect(reviewerAddress).to.equal(reviewer1.address);
@@ -190,15 +246,16 @@ describe("ProductFindr", function () {
     const { productFindr, owner, reviewer1, reviewer2 } = await loadFixture(
       deployContractsFixture
     );
+    const betaTestingAvailable = false;
     await productFindr
       .connect(owner)
-      .registerProduct(owner.address, productDetails);
+      .registerProduct(owner.address, productDetailsWithoutBetaTesting, betaTestingAvailable, betaTestingDetails);
     await productFindr
       .connect(reviewer1)
-      .addReview(reviewer1, 1, "Great product!", 5);
+      .addReview(reviewer1.address, 1, "Great product!", 5);
     await productFindr
       .connect(reviewer2)
-      .addReview(reviewer1, 1, "I love it!", 4);
+      .addReview(reviewer2.address, 1, "I love it!", 4);
 
     const reviewsCount = await productFindr.getReviewsCount(1);
     expect(reviewsCount).to.equal(2);

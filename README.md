@@ -22,8 +22,11 @@ npx hardhat test
 
 ### Base Sepolia Contract
 
-- DeployModule#Product - 0xd4544054d66C71367b9eCa147555b1c2F6b0BD8f
-- DeployModule#UserInfo - 0x990cF6a3985f1eEc981BB049cbC473e86C59F956
-- DeployModule#Comment - 0xEFEd438f58722C438Eb1FCC98E3AD966b95015F0
-- DeployModule#Review - 0xD894913f03EF8A174f559F2A44eC10f5156D2307
-- DeployModule#ProductFindr - 0x18630Dd257b055EB04879fe337e8722Dd2C8f71b
+Deployed Addresses
+
+- DeployModule#BetaTestingDetailsManager - 0x1C07e888080139337f6348eD87720c0400C9DBB4
+- DeployModule#UserInfo - 0x84536780EF38C06ab2683FD5D15EB198AB978391
+- DeployModule#Product - 0xc399215e17114437C36BCD6b8B85d8D2452fBea8
+- DeployModule#Comment - 0x62df86B7Acf2c4346E07233f6902e724456F078b
+- DeployModule#Review - 0x76078A427Fa7b6074f8137961374bc29e7A3A4b8
+- DeployModule#ProductFindr - 0x8B256f579d4561B6c7622E0965D668Dd1F28C5Da

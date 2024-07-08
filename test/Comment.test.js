@@ -78,11 +78,13 @@ describe("Comment", function () {
   };
 
   const betaTestingDetails = {
+    contractAddress: "0x",
     targetNumbersOfTester: 100,
     testingGoal: "Test Goal",
     goals: ["Goal 1", "Goal 2"],
     startingDate: Math.floor(Date.now() / 1000), // current timestamp in seconds
     endingDate: Math.floor(Date.now() / 1000) + 86400, // current timestamp + 1 day
+    featureLoomLink: "http://feature.loom.link",
   };
 
   it("Should allow a user to comment on a product without beta testing", async function () {

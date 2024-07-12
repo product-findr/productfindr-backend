@@ -1,8 +1,6 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
-const {
-  loadFixture,
-} = require("@nomicfoundation/hardhat-toolbox/network-helpers");
+const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
 
 describe("Comment", function () {
   async function deployContractsFixture() {
@@ -16,10 +14,7 @@ describe("Comment", function () {
     await betaTestingManager.waitForDeployment();
 
     const Product = await ethers.getContractFactory("Product");
-    const product = await Product.deploy(
-      owner.address,
-      betaTestingManager.target
-    );
+    const product = await Product.deploy(owner.address);
     await product.waitForDeployment();
 
     const Comment = await ethers.getContractFactory("Comment");
@@ -106,6 +101,24 @@ describe("Comment", function () {
 
     expect(singleComment.content).to.equal("Great product!");
     expect(singleComment.commenter).to.equal(commenter1.address);
+  });
+
+  it("Should revert if comment content is empty", async function () {
+    const { product, comment, owner, commenter1 } = await loadFixture(
+      deployContractsFixture
+    );
+    const betaTestingAvailable = false;
+    await product
+      .connect(owner)
+      .registerProduct(
+        owner.address,
+        productDetailsWithoutBetaTesting,
+        betaTestingAvailable,
+        betaTestingDetails
+      );
+    await expect(
+      comment.connect(commenter1).commentOnProduct(1, "")
+    ).to.be.revertedWith("Comment content cannot be empty");
   });
 
   it("Should allow a user to comment on a product with beta testing", async function () {

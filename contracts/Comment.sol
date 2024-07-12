@@ -25,7 +25,7 @@ contract Comment {
 
     modifier productExists(uint256 _productId) {
         require(
-            productContract.getProduct(_productId).id == _productId,
+            productContract.getProduct(_productId).product.id == _productId,
             "Product does not exist"
         );
         _;
@@ -39,10 +39,15 @@ contract Comment {
         _;
     }
 
+    modifier nonEmptyContent(string memory _content) {
+        require(bytes(_content).length > 0, "Comment content cannot be empty");
+        _;
+    }
+
     function commentOnProduct(
         uint256 _productId,
         string memory _content
-    ) public productExists(_productId) {
+    ) public productExists(_productId) nonEmptyContent(_content) {
         productComments[_productId].push(
             CommentInfo({
                 commenter: msg.sender,

@@ -7,8 +7,8 @@ module.exports = buildModule("DeployModule", (m) => {
   // Deploy BetaTestingDetailsManager
   const betaTestingManager = m.contract("BetaTestingDetailsManager");
 
-  // Deploy Product with the deployer's address and BetaTestingDetailsManager address
-  const product = m.contract("Product", [deployer, betaTestingManager]);
+  // Deploy Product with the deployer's address
+  const product = m.contract("Product", [deployer]);
 
   // Deploy other contracts
   const comment = m.contract("Comment", [product]);

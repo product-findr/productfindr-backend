@@ -11,8 +11,8 @@ contract Review {
         uint256 timestamp;
     }
 
-    Product private immutable productContract; // Use immutable to save gas on state variable
-    mapping(uint256 => ReviewInfo[]) private productReviews; // Make the mapping private, and provide external getters
+    Product private productContract;
+    mapping(uint256 => ReviewInfo[]) public productReviews;
 
     event ReviewAdded(
         uint256 indexed productId,
@@ -27,7 +27,7 @@ contract Review {
 
     modifier productExists(uint256 _productId) {
         require(
-            productContract.getProduct(_productId).id == _productId,
+            productContract.getProduct(_productId).product.id == _productId,
             "Product does not exist"
         );
         _;
@@ -51,16 +51,25 @@ contract Review {
         _;
     }
 
+    modifier notProductOwner(uint256 _productId, address _reviewer) {
+        require(
+            productContract.getProduct(_productId).product.owner != _reviewer,
+            "Product owner cannot review their own product"
+        );
+        _;
+    }
+
     function addReview(
         address _reviewer,
         uint256 _productId,
         string memory _content,
         uint256 _rating
     )
-        external
+        public
         productExists(_productId)
         validRating(_rating)
         nonEmptyContent(_content)
+        notProductOwner(_productId, _reviewer)
     {
         productReviews[_productId].push(
             ReviewInfo({
@@ -76,7 +85,7 @@ contract Review {
 
     function getReviews(
         uint256 _productId
-    ) external view productExists(_productId) returns (ReviewInfo[] memory) {
+    ) public view productExists(_productId) returns (ReviewInfo[] memory) {
         return productReviews[_productId];
     }
 
@@ -84,7 +93,7 @@ contract Review {
         uint256 _productId,
         uint256 _reviewId
     )
-        external
+        public
         view
         productExists(_productId)
         reviewExists(_productId, _reviewId)
@@ -97,7 +106,7 @@ contract Review {
         uint256 _productId,
         uint256 _reviewId
     )
-        external
+        public
         view
         productExists(_productId)
         reviewExists(_productId, _reviewId)
@@ -108,7 +117,7 @@ contract Review {
 
     function getReviewsCount(
         uint256 _productId
-    ) external view productExists(_productId) returns (uint256) {
+    ) public view productExists(_productId) returns (uint256) {
         return productReviews[_productId].length;
     }
 }

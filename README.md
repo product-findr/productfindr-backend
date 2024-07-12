@@ -24,9 +24,9 @@ npx hardhat test
 
 Deployed Addresses
 
-- DeployModule#BetaTestingDetailsManager - 0x0c59c871ADf6d354A2392C41AfE2d4fEF15f0f82
-- DeployModule#UserInfo - 0xEef41b022896Ced7F769b9632c72DA218d4f3A78
-- DeployModule#Product - 0x22Bd03e5Fd58Ee4fe801e8301CC58Ae30B87A6Ce
-- DeployModule#Comment - 0x091C327cb6880895a617dc7B5b5eE1824e76ce95
-- DeployModule#Review - 0x1D4B9e959d036A872B848e914646aa0Eb433bB6b
-- DeployModule#ProductFindr - 0x6dE9ce896A9D1F9f8899998e512306A1c38D74f7
+DeployModule#BetaTestingDetailsManager - 0xa1B3A29E22F4fCEd96C9953C936b459a80e52c65
+DeployModule#Product - 0x9ECC7D29A7c07C9Bf4295E709724E5F1BCf78Be9
+DeployModule#UserInfo - 0x0eFBFe21b32718306Da8722918C3e5270F0C5FC8
+DeployModule#Comment - 0x4a7313351ea46F8bbca56375AD7D2464727DfeA4
+DeployModule#Review - 0x3C86f8A0bDF4E67eBccaC57b0F5e9f9d4bAeca21
+DeployModule#ProductFindr - 0x7af0191cFa063b0E0D7d67577586D71D8b9c8cc4

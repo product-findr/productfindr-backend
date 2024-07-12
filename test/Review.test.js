@@ -1,8 +1,6 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
-const {
-  loadFixture,
-} = require("@nomicfoundation/hardhat-toolbox/network-helpers");
+const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
 
 describe("Review", function () {
   async function deployContractsFixture() {
@@ -15,10 +13,7 @@ describe("Review", function () {
     await betaTestingManager.waitForDeployment();
 
     const Product = await ethers.getContractFactory("Product");
-    const product = await Product.deploy(
-      owner.address,
-      betaTestingManager.target
-    );
+    const product = await Product.deploy(owner.address);
     await product.waitForDeployment();
 
     const Review = await ethers.getContractFactory("Review");
@@ -256,5 +251,46 @@ describe("Review", function () {
     await expect(
       review.connect(reviewer1).addReview(reviewer1.address, 1, "", 5)
     ).to.be.revertedWith("Review content cannot be empty");
+  });
+
+  it("Should revert if the reviewer is the product owner", async function () {
+    const { product, review, owner } = await loadFixture(
+      deployContractsFixture
+    );
+
+    const betaTestingAvailable = false;
+    await product
+      .connect(owner)
+      .registerProduct(
+        owner.address,
+        productDetailsWithoutBetaTesting,
+        betaTestingAvailable,
+        betaTestingDetails
+      );
+    await expect(
+      review.connect(owner).addReview(owner.address, 1, "Invalid reviewer!", 5)
+    ).to.be.revertedWith("Product owner cannot review their own product");
+  });
+
+  it("Should revert if review does not exist", async function () {
+    const { review, owner, reviewer1, product } = await loadFixture(
+      deployContractsFixture
+    );
+    const betaTestingAvailable = false;
+    await product
+      .connect(owner)
+      .registerProduct(
+        owner.address,
+        productDetailsWithoutBetaTesting,
+        betaTestingAvailable,
+        betaTestingDetails
+      );
+    await review
+      .connect(reviewer1)
+      .addReview(reviewer1.address, 1, "Great product!", 5);
+
+    await expect(review.getReview(1, 99)).to.be.revertedWith(
+      "Review does not exist"
+    );
   });
 });

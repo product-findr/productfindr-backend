@@ -6,6 +6,8 @@ import "./Product.sol";
 import "./Comment.sol";
 import "./Review.sol";
 import "./BetaTestingDetailsManager.sol";
+import "./library/ProductLibrary.sol";
+import "./library/BetaTestingDetailsLibrary.sol";
 
 contract ProductFindr is Ownable {
     Product private productContract;
@@ -40,11 +42,26 @@ contract ProductFindr is Ownable {
         _;
     }
 
+    modifier validCommentContent(string memory _content) {
+        require(bytes(_content).length > 0, "Comment content cannot be empty");
+        _;
+    }
+
+    modifier validReviewContent(string memory _content) {
+        require(bytes(_content).length > 0, "Review content cannot be empty");
+        _;
+    }
+
+    modifier validReviewRating(uint256 _rating) {
+        require(_rating > 0 && _rating <= 5, "Rating must be between 1 and 5");
+        _;
+    }
+
     function registerProduct(
         address _owner,
-        Product.ProductDetails memory details,
+        ProductLibrary.ProductDetails memory details,
         bool betaTestingAvailable,
-        BetaTestingDetailsManager.BetaTestingDetails memory betaDetails
+        BetaTestingDetailsLibrary.BetaTestingDetails memory betaDetails
     ) public {
         productContract.registerProduct(
             _owner,
@@ -58,17 +75,17 @@ contract ProductFindr is Ownable {
 
     function upvoteProduct(uint256 _productId, address _upvoter) public {
         productContract.upvoteProduct(_productId, _upvoter);
-        userReputation[productContract.getProduct(_productId).owner]++;
+        userReputation[productContract.getProduct(_productId).product.owner]++;
         emit UserReputationUpdated(
-            productContract.getProduct(_productId).owner,
-            userReputation[productContract.getProduct(_productId).owner]
+            productContract.getProduct(_productId).product.owner,
+            userReputation[productContract.getProduct(_productId).product.owner]
         );
     }
 
     function commentOnProduct(
         uint256 _productId,
         string memory _content
-    ) public {
+    ) public validCommentContent(_content) {
         commentContract.commentOnProduct(_productId, _content);
         userReputation[msg.sender]++;
         emit UserReputationUpdated(msg.sender, userReputation[msg.sender]);
@@ -76,14 +93,14 @@ contract ProductFindr is Ownable {
 
     function getProduct(
         uint256 _productId
-    ) public view returns (Product.ProductInfo memory) {
+    ) public view returns (ProductLibrary.ProductWithBetaTesting memory) {
         return productContract.getProduct(_productId);
     }
 
     function getListedProducts()
         public
         view
-        returns (Product.ProductInfo[] memory)
+        returns (ProductLibrary.ProductWithBetaTesting[] memory)
     {
         return productContract.getListedProducts();
     }
@@ -91,7 +108,7 @@ contract ProductFindr is Ownable {
     function getListedProductsAvailable()
         public
         view
-        returns (Product.ProductInfo[] memory)
+        returns (ProductLibrary.ProductWithBetaTesting[] memory)
     {
         return productContract.getListedProductsAvailable();
     }
@@ -101,7 +118,7 @@ contract ProductFindr is Ownable {
         uint256 _productId,
         string memory _content,
         uint256 _rating
-    ) public {
+    ) public validReviewContent(_content) validReviewRating(_rating) {
         reviewContract.addReview(_reviewer, _productId, _content, _rating);
         userReputation[msg.sender]++;
         emit UserReputationUpdated(msg.sender, userReputation[msg.sender]);

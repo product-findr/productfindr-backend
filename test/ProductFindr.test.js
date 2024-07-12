@@ -1,8 +1,6 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
-const {
-  loadFixture,
-} = require("@nomicfoundation/hardhat-toolbox/network-helpers");
+const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
 
 describe("ProductFindr", function () {
   async function deployContractsFixture() {
@@ -16,10 +14,7 @@ describe("ProductFindr", function () {
     await betaTestingManager.waitForDeployment();
 
     const Product = await ethers.getContractFactory("Product");
-    const product = await Product.deploy(
-      owner.address,
-      betaTestingManager.target
-    );
+    const product = await Product.deploy(owner.address);
     await product.waitForDeployment();
 
     const Comment = await ethers.getContractFactory("Comment");
@@ -122,8 +117,8 @@ describe("ProductFindr", function () {
       );
     const productInfo = await product.getProduct(1);
 
-    expect(productInfo.details.productName).to.equal("Test Product");
-    expect(productInfo.owner).to.equal(otherUser.address);
+    expect(productInfo.product.details.productName).to.equal("Test Product");
+    expect(productInfo.product.owner).to.equal(otherUser.address);
   });
 
   it("Should register a new product with beta testing", async function () {
@@ -141,8 +136,29 @@ describe("ProductFindr", function () {
       );
     const productInfo = await product.getProduct(1);
 
-    expect(productInfo.details.productName).to.equal("Test Product");
-    expect(productInfo.owner).to.equal(otherUser.address);
+    expect(productInfo.product.details.productName).to.equal("Test Product");
+    expect(productInfo.product.owner).to.equal(otherUser.address);
+  });
+
+  it("Should revert if beta testing link is missing when beta testing is enabled", async function () {
+    const { productFindr, product, otherUser } = await loadFixture(
+      deployContractsFixture
+    );
+    const invalidProductDetails = {
+      ...productDetailsWithBetaTesting,
+      betaTestingLink: "",
+    };
+    const betaTestingAvailable = true;
+    await expect(
+      productFindr
+        .connect(otherUser)
+        .registerProduct(
+          otherUser.address,
+          invalidProductDetails,
+          betaTestingAvailable,
+          betaTestingDetails
+        )
+    ).to.be.revertedWith("Beta testing link required");
   });
 
   it("Should upvote a product", async function () {
@@ -161,7 +177,7 @@ describe("ProductFindr", function () {
     await productFindr.connect(otherUser).upvoteProduct(1, otherUser.address);
     const productInfo = await product.getProduct(1);
 
-    expect(productInfo.upvotes).to.equal(1);
+    expect(productInfo.product.upvotes).to.equal(1);
   });
 
   it("Should not allow product owner to upvote their own product", async function () {
@@ -316,5 +332,27 @@ describe("ProductFindr", function () {
 
     const reviewsCount = await productFindr.getReviewsCount(1);
     expect(reviewsCount).to.equal(2);
+  });
+
+  it("Should revert if review does not exist", async function () {
+    const { productFindr, owner, reviewer1 } = await loadFixture(
+      deployContractsFixture
+    );
+    const betaTestingAvailable = false;
+    await productFindr
+      .connect(owner)
+      .registerProduct(
+        owner.address,
+        productDetailsWithoutBetaTesting,
+        betaTestingAvailable,
+        betaTestingDetails
+      );
+    await productFindr
+      .connect(reviewer1)
+      .addReview(reviewer1.address, 1, "Great product!", 5);
+
+    await expect(productFindr.getReview(1, 99)).to.be.revertedWith(
+      "Review does not exist"
+    );
   });
 });

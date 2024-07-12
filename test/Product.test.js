@@ -18,10 +18,8 @@ describe("Product", function () {
     await betaTestingManager.waitForDeployment();
 
     ProductFactory = await ethers.getContractFactory("Product");
-    product = await ProductFactory.deploy(
-      owner.address,
-      betaTestingManager.target
-    );
+    product = await ProductFactory.deploy(owner.address);
+    await product.waitForDeployment();
   });
 
   const productDetailsWithoutBetaTesting = {
@@ -83,8 +81,8 @@ describe("Product", function () {
       betaTestingDetails
     );
     const productInfo = await product.getProduct(1);
-    expect(productInfo.details.productName).to.equal("Test Product");
-    expect(productInfo.owner).to.equal(owner.address);
+    expect(productInfo.product.details.productName).to.equal("Test Product");
+    expect(productInfo.product.owner).to.equal(owner.address);
   });
 
   it("Should register a new product with beta testing", async function () {
@@ -97,12 +95,26 @@ describe("Product", function () {
     );
     const productInfo = await product.getProduct(1);
 
-    // Fetch the beta testing details
-    const betaDetails = await betaTestingManager.getBetaTestingDetails(1);
+    expect(productInfo.product.details.productName).to.equal("Test Product");
+    expect(productInfo.product.owner).to.equal(owner.address);
+    expect(productInfo.betaTestingDetails.testingGoal).to.equal("Test Goal");
+  });
 
-    expect(productInfo.details.productName).to.equal("Test Product");
-    expect(productInfo.owner).to.equal(owner.address);
-    expect(betaDetails.testingGoal).to.equal("Test Goal");
+  it("Should revert if beta testing link is missing when beta testing is enabled", async function () {
+    const invalidProductDetails = {
+      ...productDetailsWithBetaTesting,
+      betaTestingLink: "",
+    };
+
+    const betaTestingAvailable = true;
+    await expect(
+      product.registerProduct(
+        owner.address,
+        invalidProductDetails,
+        betaTestingAvailable,
+        betaTestingDetails
+      )
+    ).to.be.revertedWith("Beta testing link required");
   });
 
   it("Should upvote a product", async function () {
@@ -115,7 +127,7 @@ describe("Product", function () {
     );
     await product.connect(otherUser).upvoteProduct(1, otherUser.address);
     const productInfo = await product.getProduct(1);
-    expect(productInfo.upvotes).to.equal(1);
+    expect(productInfo.product.upvotes).to.equal(1);
   });
 
   it("Should not allow product owner to upvote their own product", async function () {
@@ -129,6 +141,20 @@ describe("Product", function () {
     await expect(product.upvoteProduct(1, owner.address)).to.be.revertedWith(
       "Product owner cannot upvote their own product"
     );
+  });
+
+  it("Should revert if user tries to upvote a product more than once", async function () {
+    const betaTestingAvailable = false;
+    await product.registerProduct(
+      owner.address,
+      productDetailsWithoutBetaTesting,
+      betaTestingAvailable,
+      betaTestingDetails
+    );
+    await product.connect(otherUser).upvoteProduct(1, otherUser.address);
+    await expect(
+      product.connect(otherUser).upvoteProduct(1, otherUser.address)
+    ).to.be.revertedWith("User has already upvoted this product");
   });
 
   it("Should get Listed Products", async function () {
@@ -165,6 +191,39 @@ describe("Product", function () {
       betaTestingDetails
     );
     const productDetails = await product.getProduct(1);
-    expect(productDetails.details.productName).to.equal("Test Product");
+    expect(productDetails.product.details.productName).to.equal("Test Product");
+  });
+
+  it("Should delete a product", async function () {
+    const betaTestingAvailable = false;
+    await product.registerProduct(
+      owner.address,
+      productDetailsWithoutBetaTesting,
+      betaTestingAvailable,
+      betaTestingDetails
+    );
+    await product.deleteProduct(1);
+    await expect(product.getProduct(1)).to.be.revertedWith(
+      "Product does not exist"
+    );
+  });
+
+  it("Should revert if non-owner tries to delete a product", async function () {
+    const betaTestingAvailable = false;
+    await product.registerProduct(
+      owner.address,
+      productDetailsWithoutBetaTesting,
+      betaTestingAvailable,
+      betaTestingDetails
+    );
+    await expect(
+      product.connect(otherUser).deleteProduct(1)
+    ).to.be.revertedWith("Only the product owner can perform this action");
+  });
+
+  it("Should revert if trying to delete a non-existent product", async function () {
+    await expect(product.deleteProduct(999)).to.be.revertedWith(
+      "Product does not exist"
+    );
   });
 });

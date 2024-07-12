@@ -2,43 +2,22 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "./BetaTestingDetailsManager.sol";
+import "./library/ProductLibrary.sol";
+import "./library/BetaTestingDetailsLibrary.sol";
 
 contract Product is Ownable {
-    struct ProductDetails {
-        string productName;
-        string tagLine;
-        string productLink;
-        string twitterLink;
-        string description;
-        bool isOpenSource;
-        string category;
-        string thumbNail;
-        string mediaFile;
-        string loomLink;
-        bool workedWithTeam;
-        string teamMembersInput;
-        string pricingOption;
-        string offer;
-        string promoCode;
-        string expirationDate;
-        string betaTestingLink;
-    }
+    using ProductLibrary for ProductLibrary.ProductDetails;
+    using ProductLibrary for ProductLibrary.ProductInfo;
+    using ProductLibrary for ProductLibrary.ProductWithBetaTesting;
 
-    struct ProductInfo {
-        uint256 id;
-        address owner;
-        ProductDetails details;
-        uint256 upvotes;
-        bool betaTestingAvailable;
-        uint256 timestamp;
-    }
+    using BetaTestingDetailsLibrary for BetaTestingDetailsLibrary.BetaTestingDetails;
 
     uint256 private _productIdCounter;
-    mapping(uint256 => ProductInfo) public products;
+    mapping(uint256 => ProductLibrary.ProductInfo) public products;
     mapping(uint256 => mapping(address => bool)) public hasUpvoted;
 
-    BetaTestingDetailsManager public betaTestingManager;
+    mapping(uint256 => BetaTestingDetailsLibrary.BetaTestingDetails)
+        public betaTestingDetails;
 
     event ProductRegistered(
         uint256 indexed productId,
@@ -54,12 +33,7 @@ contract Product is Ownable {
         string betaTestingLink
     );
 
-    constructor(
-        address initialOwner,
-        address _betaTestingManager
-    ) Ownable(initialOwner) {
-        betaTestingManager = BetaTestingDetailsManager(_betaTestingManager);
-    }
+    constructor(address initialOwner) Ownable(initialOwner) {}
 
     modifier productExists(uint256 _productId) {
         require(
@@ -93,12 +67,28 @@ contract Product is Ownable {
         _;
     }
 
+    modifier validProductDetails(ProductLibrary.ProductDetails memory details) {
+        require(
+            bytes(details.productName).length > 0,
+            "Product name cannot be empty"
+        );
+        require(
+            bytes(details.description).length > 0,
+            "Product description cannot be empty"
+        );
+        require(
+            bytes(details.productLink).length > 0,
+            "Product link cannot be empty"
+        );
+        _;
+    }
+
     function registerProduct(
         address _owner,
-        ProductDetails memory details,
+        ProductLibrary.ProductDetails memory details,
         bool betaTestingAvailable,
-        BetaTestingDetailsManager.BetaTestingDetails memory betaDetails
-    ) public {
+        BetaTestingDetailsLibrary.BetaTestingDetails memory betaDetails
+    ) public validProductDetails(details) {
         _productIdCounter++;
         uint256 productId = _productIdCounter;
 
@@ -107,10 +97,10 @@ contract Product is Ownable {
                 bytes(details.betaTestingLink).length > 0,
                 "Beta testing link required"
             );
-            betaTestingManager.setBetaTestingDetails(productId, betaDetails);
+            betaTestingDetails[productId] = betaDetails;
         }
 
-        products[productId] = ProductInfo({
+        products[productId] = ProductLibrary.ProductInfo({
             id: productId,
             owner: _owner,
             details: details,
@@ -155,21 +145,35 @@ contract Product is Ownable {
 
     function getProduct(
         uint256 _productId
-    ) public view productExists(_productId) returns (ProductInfo memory) {
-        return products[_productId];
+    )
+        public
+        view
+        productExists(_productId)
+        returns (ProductLibrary.ProductWithBetaTesting memory)
+    {
+        ProductLibrary.ProductWithBetaTesting memory productWithBetaTesting;
+        productWithBetaTesting.product = products[_productId];
+        productWithBetaTesting.hasBetaTestingDetails = products[_productId]
+            .betaTestingAvailable;
+        if (productWithBetaTesting.hasBetaTestingDetails) {
+            productWithBetaTesting.betaTestingDetails = betaTestingDetails[
+                _productId
+            ];
+        }
+        return productWithBetaTesting;
     }
 
     function canBeListed(
         uint256 _productId
     ) public view productExists(_productId) returns (bool) {
-        ProductInfo memory product = products[_productId];
+        ProductLibrary.ProductInfo memory product = products[_productId];
         return block.timestamp >= product.timestamp + 24 hours;
     }
 
     function getListedProductsAvailable()
         public
         view
-        returns (ProductInfo[] memory)
+        returns (ProductLibrary.ProductWithBetaTesting[] memory)
     {
         uint256 totalProducts = _productIdCounter;
         uint256 listedCount = 0;
@@ -182,13 +186,16 @@ contract Product is Ownable {
         }
 
         // Create an array to hold the listed products
-        ProductInfo[] memory listedProducts = new ProductInfo[](listedCount);
+        ProductLibrary.ProductWithBetaTesting[]
+            memory listedProducts = new ProductLibrary.ProductWithBetaTesting[](
+                listedCount
+            );
         uint256 index = 0;
 
         // Populate the array with the listed products
         for (uint256 i = 1; i <= totalProducts; i++) {
             if (canBeListed(i)) {
-                listedProducts[index] = products[i];
+                listedProducts[index] = getProduct(i);
                 index++;
             }
         }
@@ -196,15 +203,29 @@ contract Product is Ownable {
         return listedProducts;
     }
 
-    function getListedProducts() public view returns (ProductInfo[] memory) {
+    function getListedProducts()
+        public
+        view
+        returns (ProductLibrary.ProductWithBetaTesting[] memory)
+    {
         uint256 totalProducts = _productIdCounter;
 
-        ProductInfo[] memory listedProducts = new ProductInfo[](totalProducts);
+        ProductLibrary.ProductWithBetaTesting[]
+            memory listedProducts = new ProductLibrary.ProductWithBetaTesting[](
+                totalProducts
+            );
 
         for (uint256 i = 1; i <= totalProducts; i++) {
-            listedProducts[i - 1] = products[i];
+            listedProducts[i - 1] = getProduct(i);
         }
 
         return listedProducts;
+    }
+
+    function deleteProduct(
+        uint256 _productId
+    ) public productExists(_productId) onlyProductOwner(_productId) {
+        delete products[_productId];
+        delete betaTestingDetails[_productId];
     }
 }

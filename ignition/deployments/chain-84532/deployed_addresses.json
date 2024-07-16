@@ -1,8 +1,8 @@
 {
-  "DeployModule#BetaTestingDetailsManager": "0xa1B3A29E22F4fCEd96C9953C936b459a80e52c65",
-  "DeployModule#Product": "0x9ECC7D29A7c07C9Bf4295E709724E5F1BCf78Be9",
-  "DeployModule#UserInfo": "0x0eFBFe21b32718306Da8722918C3e5270F0C5FC8",
-  "DeployModule#Comment": "0x4a7313351ea46F8bbca56375AD7D2464727DfeA4",
-  "DeployModule#Review": "0x3C86f8A0bDF4E67eBccaC57b0F5e9f9d4bAeca21",
-  "DeployModule#ProductFindr": "0x7af0191cFa063b0E0D7d67577586D71D8b9c8cc4"
+  "DeployModule#BetaTestingDetailsManager": "0xbb16df75f6B6eCb8e356F90FA55Eb974dc3007B8",
+  "DeployModule#Product": "0x30dE3412a04b3442A618A7bF731d958e0C2bb2E8",
+  "DeployModule#UserInfo": "0xD9Ea2460A2a03cD5474239F0f6F8E7A59d22FF16",
+  "DeployModule#Comment": "0x810B434a3b7Fe7C2e455e26e0dDD1F074fDbBCF9",
+  "DeployModule#Review": "0x271B50727F5a4fbb2C6A96BcD252f0AF3DFC4f75",
+  "DeployModule#ProductFindr": "0x36EAe615826f904470A69dc118be168b60f93BA0"
 }

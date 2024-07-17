@@ -200,4 +200,85 @@ describe("Comment", function () {
     const commenterAddress = await comment.getCommenter(1, 0);
     expect(commenterAddress).to.equal(commenter1.address);
   });
+
+  // New Test Cases
+  it("Should revert if commenting on a non-existent product", async function () {
+    const { comment, commenter1 } = await loadFixture(deployContractsFixture);
+    await expect(
+      comment.connect(commenter1).commentOnProduct(999, "Great product!")
+    ).to.be.revertedWith("Product does not exist");
+  });
+
+  it("Should revert if comment ID is out of bounds", async function () {
+    const { product, comment, owner, commenter1 } = await loadFixture(
+      deployContractsFixture
+    );
+    const betaTestingAvailable = false;
+    await product
+      .connect(owner)
+      .registerProduct(
+        owner.address,
+        productDetailsWithoutBetaTesting,
+        betaTestingAvailable,
+        betaTestingDetails
+      );
+    await comment.connect(commenter1).commentOnProduct(1, "Great product!");
+    await expect(comment.getComment(1, 999)).to.be.revertedWith(
+      "Comment does not exist"
+    );
+  });
+
+  it("Should allow a user to post multiple comments", async function () {
+    const { product, comment, owner, commenter1 } = await loadFixture(
+      deployContractsFixture
+    );
+    const betaTestingAvailable = false;
+    await product
+      .connect(owner)
+      .registerProduct(
+        owner.address,
+        productDetailsWithoutBetaTesting,
+        betaTestingAvailable,
+        betaTestingDetails
+      );
+    await comment.connect(commenter1).commentOnProduct(1, "Great product!");
+    await comment.connect(commenter1).commentOnProduct(1, "I have a question!");
+
+    const commentsCount = await comment.getCommentsCount(1);
+    expect(commentsCount).to.equal(2);
+
+    const firstComment = await comment.getComment(1, 0);
+    const secondComment = await comment.getComment(1, 1);
+
+    expect(firstComment.content).to.equal("Great product!");
+    expect(secondComment.content).to.equal("I have a question!");
+  });
+
+  it("Should check comment timestamps", async function () {
+    const { product, comment, owner, commenter1 } = await loadFixture(
+      deployContractsFixture
+    );
+    const betaTestingAvailable = false;
+    await product
+      .connect(owner)
+      .registerProduct(
+        owner.address,
+        productDetailsWithoutBetaTesting,
+        betaTestingAvailable,
+        betaTestingDetails
+      );
+    await comment.connect(commenter1).commentOnProduct(1, "Great product!");
+
+    const singleComment = await comment.getComment(1, 0);
+    const blockTimestamp = (await ethers.provider.getBlock("latest")).timestamp;
+
+    expect(singleComment.timestamp).to.be.closeTo(blockTimestamp, 60);
+  });
+
+  it("Should revert if non-registered user tries to comment", async function () {
+    const { comment, otherUser } = await loadFixture(deployContractsFixture);
+    await expect(
+      comment.connect(otherUser).commentOnProduct(1, "Great product!")
+    ).to.be.revertedWith("Product does not exist");
+  });
 });

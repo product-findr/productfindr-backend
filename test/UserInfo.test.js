@@ -409,4 +409,168 @@ describe("UserInfo", function () {
     expect(userByAddress.bio).to.equal(userDetails.bio);
     expect(userByAddress.interests).to.deep.equal(userDetails.interests);
   });
+
+  // Additional test cases
+
+  it("Should revert if user tries to add an email with invalid format", async function () {
+    const { userInfo, user1 } = await loadFixture(deployContractFixture);
+    const userDetails = {
+      username: "user1",
+      email: "invalid-email-format",
+      bio: "Bio of user1",
+      interests: ["Reading", "Coding"],
+    };
+
+    await expect(
+      userInfo.addUser(
+        user1.address,
+        userDetails.username,
+        userDetails.email,
+        userDetails.bio,
+        userDetails.interests
+      )
+    ).to.be.revertedWith("Invalid email format");
+  });
+
+  it("Should revert if user tries to add an invalid email length", async function () {
+    const { userInfo, user1 } = await loadFixture(deployContractFixture);
+    const userDetails = {
+      username: "user1",
+      email: "a@b.c", // Too short email length
+      bio: "Bio of user1",
+      interests: ["Reading", "Coding"],
+    };
+
+    await expect(
+      userInfo.addUser(
+        user1.address,
+        userDetails.username,
+        userDetails.email,
+        userDetails.bio,
+        userDetails.interests
+      )
+    ).to.be.revertedWith("Invalid email length");
+  });
+
+  it("Should revert if user tries to add an invalid username length", async function () {
+    const { userInfo, user1 } = await loadFixture(deployContractFixture);
+    const userDetails = {
+      username: "u", // Too short username length
+      email: "user1@example.com",
+      bio: "Bio of user1",
+      interests: ["Reading", "Coding"],
+    };
+
+    await expect(
+      userInfo.addUser(
+        user1.address,
+        userDetails.username,
+        userDetails.email,
+        userDetails.bio,
+        userDetails.interests
+      )
+    ).to.be.revertedWith("Invalid username length");
+  });
+
+  it("Should revert if user tries to add an overly long bio", async function () {
+    const { userInfo, user1 } = await loadFixture(deployContractFixture);
+    const userDetails = {
+      username: "user1",
+      email: "user1@example.com",
+      bio: "a".repeat(501), // Too long bio
+      interests: ["Reading", "Coding"],
+    };
+
+    await expect(
+      userInfo.addUser(
+        user1.address,
+        userDetails.username,
+        userDetails.email,
+        userDetails.bio,
+        userDetails.interests
+      )
+    ).to.be.revertedWith("Bio too long");
+  });
+
+  it("Should revert if user tries to update to an invalid email", async function () {
+    const { userInfo, user1 } = await loadFixture(deployContractFixture);
+    const userDetails = {
+      username: "user1",
+      email: "user1@example.com",
+      bio: "Bio of user1",
+      interests: ["Reading", "Coding"],
+    };
+    const updatedDetails = {
+      username: "updatedUser1",
+      email: "invalid-email-format", // Invalid email format
+      bio: "Updated bio of user1",
+    };
+
+    await userInfo.addUser(
+      user1.address,
+      userDetails.username,
+      userDetails.email,
+      userDetails.bio,
+      userDetails.interests
+    );
+
+    await expect(
+      userInfo.updateUser(
+        user1.address,
+        updatedDetails.username,
+        updatedDetails.email,
+        updatedDetails.bio
+      )
+    ).to.be.revertedWith("Invalid email format");
+  });
+
+  it("Should revert if user tries to update to an invalid username", async function () {
+    const { userInfo, user1 } = await loadFixture(deployContractFixture);
+    const userDetails = {
+      username: "user1",
+      email: "user1@example.com",
+      bio: "Bio of user1",
+      interests: ["Reading", "Coding"],
+    };
+    const updatedDetails = {
+      username: "u", // Invalid username length
+      email: "updatedUser1@example.com",
+      bio: "Updated bio of user1",
+    };
+
+    await userInfo.addUser(
+      user1.address,
+      userDetails.username,
+      userDetails.email,
+      userDetails.bio,
+      userDetails.interests
+    );
+
+    await expect(
+      userInfo.updateUser(
+        user1.address,
+        updatedDetails.username,
+        updatedDetails.email,
+        updatedDetails.bio
+      )
+    ).to.be.revertedWith("Invalid username length");
+  });
+
+  it("Should revert if non-existent user tries to update details", async function () {
+    const { userInfo, user1 } = await loadFixture(deployContractFixture);
+    const updatedDetails = {
+      username: "updatedUser1",
+      email: "updatedUser1@example.com",
+      bio: "Updated bio of user1",
+    };
+
+    await expect(
+      userInfo.updateUser(
+        user1.address,
+        updatedDetails.username,
+        updatedDetails.email,
+        updatedDetails.bio
+      )
+    ).to.be.revertedWith("User does not exist");
+  });
 });

@@ -355,4 +355,98 @@ describe("ProductFindr", function () {
       "Review does not exist"
     );
   });
+
+  // New Test Cases
+
+  it("Should revert if upvoting a non-existent product", async function () {
+    const { productFindr, otherUser } = await loadFixture(
+      deployContractsFixture
+    );
+    await expect(
+      productFindr.connect(otherUser).upvoteProduct(999, otherUser.address)
+    ).to.be.revertedWith("Product does not exist");
+  });
+
+  it("Should revert if commenting on a non-existent product", async function () {
+    const { productFindr, commenter1 } = await loadFixture(
+      deployContractsFixture
+    );
+    await expect(
+      productFindr.connect(commenter1).commentOnProduct(999, "Great product!")
+    ).to.be.revertedWith("Product does not exist");
+  });
+
+  it("Should revert if reviewing a non-existent product", async function () {
+    const { productFindr, reviewer1 } = await loadFixture(
+      deployContractsFixture
+    );
+    await expect(
+      productFindr
+        .connect(reviewer1)
+        .addReview(reviewer1.address, 999, "Great product!", 5)
+    ).to.be.revertedWith("Product does not exist");
+  });
+
+  it("Should revert if user tries to upvote more than once", async function () {
+    const { productFindr, product, owner, otherUser } = await loadFixture(
+      deployContractsFixture
+    );
+    const betaTestingAvailable = false;
+    await productFindr
+      .connect(owner)
+      .registerProduct(
+        owner.address,
+        productDetailsWithoutBetaTesting,
+        betaTestingAvailable,
+        betaTestingDetails
+      );
+    await productFindr.connect(otherUser).upvoteProduct(1, otherUser.address);
+    await expect(
+      productFindr.connect(otherUser).upvoteProduct(1, otherUser.address)
+    ).to.be.revertedWith("User has already upvoted this product");
+  });
+
+  it("Should validate product registration timestamp through ProductFindr", async function () {
+    const { productFindr, product, owner } = await loadFixture(
+      deployContractsFixture
+    );
+    const betaTestingAvailable = false;
+    await productFindr
+      .connect(owner)
+      .registerProduct(
+        owner.address,
+        productDetailsWithoutBetaTesting,
+        betaTestingAvailable,
+        betaTestingDetails
+      );
+
+    const productInfo = await product.getProduct(1);
+    const blockTimestamp = (await ethers.provider.getBlock("latest")).timestamp;
+    expect(productInfo.product.timestamp).to.be.closeTo(blockTimestamp, 60);
+  });
+
+  it("Should check if product is listed after 24 hours", async function () {
+    const { productFindr, product, owner } = await loadFixture(
+      deployContractsFixture
+    );
+    const betaTestingAvailable = false;
+    await productFindr
+      .connect(owner)
+      .registerProduct(
+        owner.address,
+        productDetailsWithoutBetaTesting,
+        betaTestingAvailable,
+        betaTestingDetails
+      );
+
+    const listedBefore24Hours = await productFindr.canBeListed(1);
+    expect(listedBefore24Hours).to.be.false;
+
+    // Simulate time passing
+    await ethers.provider.send("evm_increaseTime", [86400]); // Increase time by 24 hours
+    await ethers.provider.send("evm_mine"); // Mine a new block to apply the time increase
+
+    const listedAfter24Hours = await productFindr.canBeListed(1);
+    expect(listedAfter24Hours).to.be.true;
+  });
 });

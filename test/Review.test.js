@@ -293,4 +293,108 @@ describe("Review", function () {
       "Review does not exist"
     );
   });
+
+  // New test cases
+
+  it("Should ensure reviews are sorted by timestamp", async function () {
+    const { product, review, owner, reviewer1, reviewer2 } = await loadFixture(
+      deployContractsFixture
+    );
+
+    const betaTestingAvailable = false;
+    await product
+      .connect(owner)
+      .registerProduct(
+        owner.address,
+        productDetailsWithoutBetaTesting,
+        betaTestingAvailable,
+        betaTestingDetails
+      );
+    await review
+      .connect(reviewer1)
+      .addReview(reviewer1.address, 1, "Great product!", 5);
+    await review
+      .connect(reviewer2)
+      .addReview(reviewer2.address, 1, "I love it!", 4);
+
+    const reviews = await review.getReviews(1);
+    expect(reviews[0].content).to.equal("Great product!");
+    expect(reviews[1].content).to.equal("I love it!");
+  });
+
+  it("Should check review timestamps", async function () {
+    const { product, review, owner, reviewer1 } = await loadFixture(
+      deployContractsFixture
+    );
+
+    const betaTestingAvailable = false;
+    await product
+      .connect(owner)
+      .registerProduct(
+        owner.address,
+        productDetailsWithoutBetaTesting,
+        betaTestingAvailable,
+        betaTestingDetails
+      );
+    await review
+      .connect(reviewer1)
+      .addReview(reviewer1.address, 1, "Great product!", 5);
+
+    const singleReview = await review.getReview(1, 0);
+    const blockTimestamp = (await ethers.provider.getBlock("latest")).timestamp;
+
+    expect(singleReview.timestamp).to.be.closeTo(blockTimestamp, 60);
+  });
+
+  it("Should revert if duplicate reviews are added by the same reviewer", async function () {
+    const { product, review, owner, reviewer1 } = await loadFixture(
+      deployContractsFixture
+    );
+
+    const betaTestingAvailable = false;
+    await product
+      .connect(owner)
+      .registerProduct(
+        owner.address,
+        productDetailsWithoutBetaTesting,
+        betaTestingAvailable,
+        betaTestingDetails
+      );
+    await review
+      .connect(reviewer1)
+      .addReview(reviewer1.address, 1, "Great product!", 5);
+    await expect(
+      review
+        .connect(reviewer1)
+        .addReview(reviewer1.address, 1, "Another review!", 4)
+    ).to.be.revertedWith("Reviewer has already reviewed this product");
+  });
+
+  it("Should allow reviewer to update their existing review", async function () {
+    const { product, review, owner, reviewer1 } = await loadFixture(
+      deployContractsFixture
+    );
+
+    const betaTestingAvailable = false;
+    await product
+      .connect(owner)
+      .registerProduct(
+        owner.address,
+        productDetailsWithoutBetaTesting,
+        betaTestingAvailable,
+        betaTestingDetails
+      );
+    await review
+      .connect(reviewer1)
+      .addReview(reviewer1.address, 1, "Great product!", 5);
+
+    // Update the review
+    await review
+      .connect(reviewer1)
+      .updateReview(reviewer1.address, 1, "Updated review!", 4);
+
+    const updatedReview = await review.getReview(1, 0);
+    expect(updatedReview.content).to.equal("Updated review!");
+    expect(updatedReview.rating).to.equal(4);
+  });
 });

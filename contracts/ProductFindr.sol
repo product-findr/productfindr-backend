@@ -82,6 +82,10 @@ contract ProductFindr is Ownable {
         );
     }
 
+    function canBeListed(uint256 _productId) public view returns (bool) {
+        return productContract.canBeListed(_productId);
+    }
+
     function commentOnProduct(
         uint256 _productId,
         string memory _content

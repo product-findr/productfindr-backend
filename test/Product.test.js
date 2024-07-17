@@ -240,4 +240,116 @@ describe("Product", function () {
       "Product does not exist"
     );
   });
+
+  it("Should update beta testing link", async function () {
+    const betaTestingAvailable = true;
+    await product.registerProduct(
+      owner.address,
+      productDetailsWithBetaTesting,
+      betaTestingAvailable,
+      betaTestingDetails
+    );
+
+    const newBetaTestingLink = "http://new.beta.testing/link";
+    await product.updateBetaTestingLink(1, newBetaTestingLink);
+
+    const productInfo = await product.getProduct(1);
+    expect(productInfo.product.details.betaTestingLink).to.equal(
+      newBetaTestingLink
+    );
+  });
+
+  it("Should revert if non-owner tries to update beta testing link", async function () {
+    const betaTestingAvailable = true;
+    await product.registerProduct(
+      owner.address,
+      productDetailsWithBetaTesting,
+      betaTestingAvailable,
+      betaTestingDetails
+    );
+
+    const newBetaTestingLink = "http://new.beta.testing/link";
+    await expect(
+      product.connect(otherUser).updateBetaTestingLink(1, newBetaTestingLink)
+    ).to.be.revertedWith("Only the product owner can perform this action");
+  });
+
+  it("Should fail to register a product without essential fields", async function () {
+    const betaTestingAvailable = false;
+    const invalidProductDetails = {
+      ...productDetailsWithoutBetaTesting,
+      productName: "",
+    };
+
+    await expect(
+      product.registerProduct(
+        owner.address,
+        invalidProductDetails,
+        betaTestingAvailable,
+        betaTestingDetails
+      )
+    ).to.be.revertedWith("Product name cannot be empty");
+  });
+
+  it("Should validate product registration timestamp", async function () {
+    const betaTestingAvailable = false;
+    await product.registerProduct(
+      owner.address,
+      productDetailsWithoutBetaTesting,
+      betaTestingAvailable,
+      betaTestingDetails
+    );
+
+    const productInfo = await product.getProduct(1);
+    const blockTimestamp = (await ethers.provider.getBlock("latest")).timestamp;
+    expect(productInfo.product.timestamp).to.be.closeTo(blockTimestamp, 60);
+  });
+
+  it("Should only store beta testing details when beta testing is enabled", async function () {
+    const betaTestingAvailable = false;
+    await product.registerProduct(
+      owner.address,
+      productDetailsWithoutBetaTesting,
+      betaTestingAvailable,
+      betaTestingDetails
+    );
+
+    const productInfo = await product.getProduct(1);
+    expect(productInfo.hasBetaTestingDetails).to.be.false;
+  });
+
+  it("Should retrieve beta testing details when available", async function () {
+    const betaTestingAvailable = true;
+    await product.registerProduct(
+      owner.address,
+      productDetailsWithBetaTesting,
+      betaTestingAvailable,
+      betaTestingDetails
+    );
+
+    const betaDetails = await product.getProduct(1);
+    expect(betaDetails.betaTestingDetails.testingGoal).to.equal("Test Goal");
+  });
+
+  it("Should ensure unique product IDs", async function () {
+    const betaTestingAvailable = false;
+    await product.registerProduct(
+      owner.address,
+      productDetailsWithoutBetaTesting,
+      betaTestingAvailable,
+      betaTestingDetails
+    );
+    await product.registerProduct(
+      owner.address,
+      productDetailsWithBetaTesting,
+      betaTestingAvailable,
+      betaTestingDetails
+    );
+
+    const product1 = await product.getProduct(1);
+    const product2 = await product.getProduct(2);
+
+    expect(product1.product.id).to.equal(1);
+    expect(product2.product.id).to.equal(2);
+  });
 });

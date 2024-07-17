@@ -13,6 +13,7 @@ contract Review {
 
     Product private productContract;
     mapping(uint256 => ReviewInfo[]) public productReviews;
+    mapping(uint256 => mapping(address => bool)) public hasReviewed; // Add this mapping to track reviews
 
     event ReviewAdded(
         uint256 indexed productId,
@@ -59,6 +60,14 @@ contract Review {
         _;
     }
 
+    modifier hasNotReviewed(uint256 _productId, address _reviewer) {
+        require(
+            !hasReviewed[_productId][_reviewer],
+            "Reviewer has already reviewed this product"
+        );
+        _;
+    }
+
     function addReview(
         address _reviewer,
         uint256 _productId,
@@ -70,6 +79,7 @@ contract Review {
         validRating(_rating)
         nonEmptyContent(_content)
         notProductOwner(_productId, _reviewer)
+        hasNotReviewed(_productId, _reviewer)
     {
         productReviews[_productId].push(
             ReviewInfo({
@@ -79,8 +89,33 @@ contract Review {
                 timestamp: block.timestamp
             })
         );
+        hasReviewed[_productId][_reviewer] = true; // Mark as reviewed
 
         emit ReviewAdded(_productId, _reviewer, _content, _rating);
+    }
+
+    function updateReview(
+        address _reviewer,
+        uint256 _productId,
+        string memory _content,
+        uint256 _rating
+    )
+        public
+        productExists(_productId)
+        validRating(_rating)
+        nonEmptyContent(_content)
+        notProductOwner(_productId, _reviewer)
+    {
+        ReviewInfo[] storage reviews = productReviews[_productId];
+        for (uint256 i = 0; i < reviews.length; i++) {
+            if (reviews[i].reviewer == _reviewer) {
+                reviews[i].content = _content;
+                reviews[i].rating = _rating;
+                reviews[i].timestamp = block.timestamp;
+                return;
+            }
+        }
+        revert("Review not found");
     }
 
     function getReviews(

@@ -100,6 +100,20 @@ describe("Product", function () {
     expect(productInfo.betaTestingDetails.testingGoal).to.equal("Test Goal");
   });
 
+  it("Should register a new product without duplicate entries", async function () {
+    const betaTestingAvailable = true;
+    await product.registerProduct(
+      owner.address,
+      productDetailsWithBetaTesting,
+      betaTestingAvailable,
+      betaTestingDetails
+    );
+    const listedProducts = await product.getListedProducts();
+    expect(listedProducts.length).to.equal(1);
+    const productInfo = await product.getProduct(1);
+    expect(productInfo.product.details.productName).to.equal("Test Product");
+  });
+
   it("Should revert if beta testing link is missing when beta testing is enabled", async function () {
     const invalidProductDetails = {
       ...productDetailsWithBetaTesting,

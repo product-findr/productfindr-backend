@@ -92,14 +92,6 @@ contract Product is Ownable {
         _productIdCounter++;
         uint256 productId = _productIdCounter;
 
-        if (betaTestingAvailable) {
-            require(
-                bytes(details.betaTestingLink).length > 0,
-                "Beta testing link required"
-            );
-            betaTestingDetails[productId] = betaDetails;
-        }
-
         products[productId] = ProductLibrary.ProductInfo({
             id: productId,
             owner: _owner,
@@ -108,6 +100,14 @@ contract Product is Ownable {
             betaTestingAvailable: betaTestingAvailable,
             timestamp: block.timestamp
         });
+
+        if (betaTestingAvailable) {
+            require(
+                bytes(details.betaTestingLink).length > 0,
+                "Beta testing link required"
+            );
+            betaTestingDetails[productId] = betaDetails;
+        }
 
         emit ProductRegistered(
             productId,

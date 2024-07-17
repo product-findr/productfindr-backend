@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "./Product.sol";
+import "./LiveProduct.sol";
 
 contract Review {
     struct ReviewInfo {
@@ -11,7 +11,7 @@ contract Review {
         uint256 timestamp;
     }
 
-    Product private productContract;
+    LiveProduct private productContract;
     mapping(uint256 => ReviewInfo[]) public productReviews;
 
     event ReviewAdded(
@@ -22,12 +22,12 @@ contract Review {
     );
 
     constructor(address _productAddress) {
-        productContract = Product(_productAddress);
+        productContract = LiveProduct(_productAddress);
     }
 
     modifier productExists(uint256 _productId) {
         require(
-            productContract.getProduct(_productId).product.id == _productId,
+            productContract.getLiveProduct(_productId).id == _productId,
             "Product does not exist"
         );
         _;
@@ -53,7 +53,7 @@ contract Review {
 
     modifier notProductOwner(uint256 _productId, address _reviewer) {
         require(
-            productContract.getProduct(_productId).product.owner != _reviewer,
+            productContract.getLiveProduct(_productId).owner != _reviewer,
             "Product owner cannot review their own product"
         );
         _;

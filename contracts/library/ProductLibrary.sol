@@ -4,8 +4,6 @@ pragma solidity ^0.8.0;
 import "./BetaTestingDetailsLibrary.sol";
 
 library ProductLibrary {
-    using BetaTestingDetailsLibrary for BetaTestingDetailsLibrary.BetaTestingDetails;
-
     struct ProductDetails {
         string productName;
         string tagLine;
@@ -23,7 +21,6 @@ library ProductLibrary {
         string offer;
         string promoCode;
         string expirationDate;
-        string betaTestingLink;
     }
 
     struct ProductInfo {
@@ -31,13 +28,6 @@ library ProductLibrary {
         address owner;
         ProductDetails details;
         uint256 upvotes;
-        bool betaTestingAvailable;
         uint256 timestamp;
-    }
-
-    struct ProductWithBetaTesting {
-        ProductInfo product;
-        BetaTestingDetailsLibrary.BetaTestingDetails betaTestingDetails;
-        bool hasBetaTestingDetails;
     }
 }

@@ -1,181 +1,268 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "./Product.sol";
+import "./LiveProduct.sol";
+import "./BetaTestingProduct.sol";
 import "./Comment.sol";
 import "./Review.sol";
-import "./BetaTestingDetailsManager.sol";
-import "./library/ProductLibrary.sol";
-import "./library/BetaTestingDetailsLibrary.sol";
 
-contract ProductFindr is Ownable {
-    Product private productContract;
-    Comment private commentContract;
-    Review private reviewContract;
-    BetaTestingDetailsManager private betaTestingManager;
-
-    mapping(address => uint256) public userReputation;
-
-    event UserReputationUpdated(address indexed user, uint256 reputation);
+contract ProductFindr {
+    LiveProduct private liveProductContract;
+    BetaTestingProduct private betaTestingProductContract;
+    Comment private commentContractLive;
+    Comment private commentContractBeta;
+    Review private reviewContractLive;
+    Review private reviewContractBeta;
 
     constructor(
-        address _productAddress,
-        address _commentAddress,
-        address _reviewAddress,
-        address _betaTestingManagerAddress,
-        address initialOwner
-    ) Ownable(initialOwner) {
-        productContract = Product(_productAddress);
-        commentContract = Comment(_commentAddress);
-        reviewContract = Review(_reviewAddress);
-        betaTestingManager = BetaTestingDetailsManager(
-            _betaTestingManagerAddress
+        address _liveProductAddress,
+        address _betaTestingProductAddress,
+        address _liveCommentAddress,
+        address _betaCommentAddress,
+        address _liveReviewAddress,
+        address _betaReviewAddress
+    ) {
+        liveProductContract = LiveProduct(_liveProductAddress);
+        betaTestingProductContract = BetaTestingProduct(
+            _betaTestingProductAddress
         );
+        commentContractLive = Comment(_liveCommentAddress);
+        commentContractBeta = Comment(_betaCommentAddress);
+        reviewContractLive = Review(_liveReviewAddress);
+        reviewContractBeta = Review(_betaReviewAddress);
     }
 
-    modifier reviewExists(uint256 _productId, uint256 _reviewId) {
-        require(
-            _reviewId < reviewContract.getReviews(_productId).length,
-            "Review does not exist"
-        );
-        _;
+    // Live Product Functions
+    function registerLiveProduct(
+        address _owner,
+        ProductLibrary.ProductDetails memory details
+    ) public {
+        liveProductContract.registerLiveProduct(_owner, details);
     }
 
-    modifier validCommentContent(string memory _content) {
-        require(bytes(_content).length > 0, "Comment content cannot be empty");
-        _;
+    function upvoteLiveProduct(uint256 productId) public {
+        liveProductContract.upvoteLiveProduct(productId, msg.sender);
     }
 
-    modifier validReviewContent(string memory _content) {
-        require(bytes(_content).length > 0, "Review content cannot be empty");
-        _;
+    function getLiveProduct(
+        uint256 _productId
+    ) public view returns (ProductLibrary.ProductInfo memory) {
+        return liveProductContract.getLiveProduct(_productId);
     }
 
-    modifier validReviewRating(uint256 _rating) {
-        require(_rating > 0 && _rating <= 5, "Rating must be between 1 and 5");
-        _;
+    function getAllLiveProducts()
+        public
+        view
+        returns (ProductLibrary.ProductInfo[] memory)
+    {
+        return liveProductContract.getAllLiveProducts();
     }
 
-    function registerProduct(
+    function getLiveProductsAfter24Hours()
+        public
+        view
+        returns (ProductLibrary.ProductInfo[] memory)
+    {
+        return liveProductContract.getLiveProductsAfter24Hours();
+    }
+
+    function deleteLiveProduct(uint256 _productId) public {
+        liveProductContract.deleteLiveProduct(_productId);
+    }
+
+    // Beta Testing Product Functions
+    function registerBetaTestingProduct(
         address _owner,
         ProductLibrary.ProductDetails memory details,
-        bool betaTestingAvailable,
         BetaTestingDetailsLibrary.BetaTestingDetails memory betaDetails
     ) public {
-        productContract.registerProduct(
+        betaTestingProductContract.registerBetaTestingProduct(
             _owner,
             details,
-            betaTestingAvailable,
             betaDetails
         );
-        userReputation[msg.sender]++;
-        emit UserReputationUpdated(msg.sender, userReputation[msg.sender]);
     }
 
-    function upvoteProduct(uint256 _productId, address _upvoter) public {
-        productContract.upvoteProduct(_productId, _upvoter);
-        userReputation[productContract.getProduct(_productId).product.owner]++;
-        emit UserReputationUpdated(
-            productContract.getProduct(_productId).product.owner,
-            userReputation[productContract.getProduct(_productId).product.owner]
+    function upvoteBetaTestingProduct(uint256 productId) public {
+        betaTestingProductContract.upvoteBetaTestingProduct(
+            productId,
+            msg.sender
         );
     }
 
-    function commentOnProduct(
+    function updateBetaTestingLink(
+        uint256 _productId,
+        string memory _betaTestingLink
+    ) public {
+        betaTestingProductContract.updateBetaTestingLink(
+            _productId,
+            _betaTestingLink
+        );
+    }
+
+    function getBetaTestingProduct(
+        uint256 _productId
+    )
+        public
+        view
+        returns (
+            ProductLibrary.ProductInfo memory,
+            BetaTestingDetailsLibrary.BetaTestingDetails memory
+        )
+    {
+        return betaTestingProductContract.getBetaTestingProduct(_productId);
+    }
+
+    function getAllBetaTestingProducts()
+        public
+        view
+        returns (
+            ProductLibrary.ProductInfo[] memory,
+            BetaTestingDetailsLibrary.BetaTestingDetails[] memory
+        )
+    {
+        return betaTestingProductContract.getAllBetaTestingProducts();
+    }
+
+    function deleteBetaTestingProduct(uint256 _productId) public {
+        betaTestingProductContract.deleteBetaTestingProduct(_productId);
+    }
+
+    // Comment Functions
+    function commentOnLiveProduct(
         uint256 _productId,
         string memory _content
-    ) public validCommentContent(_content) {
-        commentContract.commentOnProduct(_productId, _content);
-        userReputation[msg.sender]++;
-        emit UserReputationUpdated(msg.sender, userReputation[msg.sender]);
+    ) public {
+        commentContractLive.commentOnProduct(_productId, _content);
     }
 
-    function getProduct(
+    function commentOnBetaTestingProduct(
+        uint256 _productId,
+        string memory _content
+    ) public {
+        commentContractBeta.commentOnProduct(_productId, _content);
+    }
+
+    function getLiveProductComments(
         uint256 _productId
-    ) public view returns (ProductLibrary.ProductWithBetaTesting memory) {
-        return productContract.getProduct(_productId);
+    ) public view returns (Comment.CommentInfo[] memory) {
+        return commentContractLive.getComments(_productId);
     }
 
-    function getListedProducts()
-        public
-        view
-        returns (ProductLibrary.ProductWithBetaTesting[] memory)
-    {
-        return productContract.getListedProducts();
+    function getBetaTestingProductComments(
+        uint256 _productId
+    ) public view returns (Comment.CommentInfo[] memory) {
+        return commentContractBeta.getComments(_productId);
     }
 
-    function getListedProductsAvailable()
-        public
-        view
-        returns (ProductLibrary.ProductWithBetaTesting[] memory)
-    {
-        return productContract.getListedProductsAvailable();
+    function getLiveProductComment(
+        uint256 _productId,
+        uint256 _commentId
+    ) public view returns (Comment.CommentInfo memory) {
+        return commentContractLive.getComment(_productId, _commentId);
     }
 
-    function addReview(
+    function getBetaTestingProductComment(
+        uint256 _productId,
+        uint256 _commentId
+    ) public view returns (Comment.CommentInfo memory) {
+        return commentContractBeta.getComment(_productId, _commentId);
+    }
+
+    function getLiveProductCommentsCount(
+        uint256 _productId
+    ) public view returns (uint256) {
+        return commentContractLive.getCommentsCount(_productId);
+    }
+
+    function getBetaTestingProductCommentsCount(
+        uint256 _productId
+    ) public view returns (uint256) {
+        return commentContractBeta.getCommentsCount(_productId);
+    }
+
+    function getLiveProductCommenter(
+        uint256 _productId,
+        uint256 _commentId
+    ) public view returns (address) {
+        return commentContractLive.getCommenter(_productId, _commentId);
+    }
+
+    function getBetaTestingProductCommenter(
+        uint256 _productId,
+        uint256 _commentId
+    ) public view returns (address) {
+        return commentContractBeta.getCommenter(_productId, _commentId);
+    }
+
+    // Review Functions
+    function addLiveProductReview(
         address _reviewer,
         uint256 _productId,
         string memory _content,
         uint256 _rating
-    ) public validReviewContent(_content) validReviewRating(_rating) {
-        reviewContract.addReview(_reviewer, _productId, _content, _rating);
-        userReputation[msg.sender]++;
-        emit UserReputationUpdated(msg.sender, userReputation[msg.sender]);
+    ) public {
+        reviewContractLive.addReview(_reviewer, _productId, _content, _rating);
     }
 
-    function getReviews(
+    function addBetaTestingProductReview(
+        address _reviewer,
+        uint256 _productId,
+        string memory _content,
+        uint256 _rating
+    ) public {
+        reviewContractBeta.addReview(_reviewer, _productId, _content, _rating);
+    }
+
+    function getLiveProductReviews(
         uint256 _productId
     ) public view returns (Review.ReviewInfo[] memory) {
-        return reviewContract.getReviews(_productId);
+        return reviewContractLive.getReviews(_productId);
     }
 
-    function getReview(
-        uint256 _productId,
-        uint256 _reviewId
-    )
-        public
-        view
-        reviewExists(_productId, _reviewId)
-        returns (Review.ReviewInfo memory)
-    {
-        return reviewContract.getReview(_productId, _reviewId);
-    }
-
-    function getReviewer(
-        uint256 _productId,
-        uint256 _reviewId
-    ) public view reviewExists(_productId, _reviewId) returns (address) {
-        return reviewContract.getReviewer(_productId, _reviewId);
-    }
-
-    function getReviewsCount(uint256 _productId) public view returns (uint256) {
-        return reviewContract.getReviewsCount(_productId);
-    }
-
-    function getComments(
+    function getBetaTestingProductReviews(
         uint256 _productId
-    ) public view returns (Comment.CommentInfo[] memory) {
-        return commentContract.getComments(_productId);
+    ) public view returns (Review.ReviewInfo[] memory) {
+        return reviewContractBeta.getReviews(_productId);
     }
 
-    function getComment(
+    function getLiveProductReview(
         uint256 _productId,
-        uint256 _commentId
-    ) public view returns (Comment.CommentInfo memory) {
-        return commentContract.getComment(_productId, _commentId);
+        uint256 _reviewId
+    ) public view returns (Review.ReviewInfo memory) {
+        return reviewContractLive.getReview(_productId, _reviewId);
     }
 
-    function getCommentsCount(
+    function getBetaTestingProductReview(
+        uint256 _productId,
+        uint256 _reviewId
+    ) public view returns (Review.ReviewInfo memory) {
+        return reviewContractBeta.getReview(_productId, _reviewId);
+    }
+
+    function getLiveProductReviewer(
+        uint256 _productId,
+        uint256 _reviewId
+    ) public view returns (address) {
+        return reviewContractLive.getReviewer(_productId, _reviewId);
+    }
+
+    function getBetaTestingProductReviewer(
+        uint256 _productId,
+        uint256 _reviewId
+    ) public view returns (address) {
+        return reviewContractBeta.getReviewer(_productId, _reviewId);
+    }
+
+    function getLiveProductReviewsCount(
         uint256 _productId
     ) public view returns (uint256) {
-        return commentContract.getCommentsCount(_productId);
+        return reviewContractLive.getReviewsCount(_productId);
     }
 
-    function getCommenter(
-        uint256 _productId,
-        uint256 _commentId
-    ) public view returns (address) {
-        return commentContract.getCommenter(_productId, _commentId);
+    function getBetaTestingProductReviewsCount(
+        uint256 _productId
+    ) public view returns (uint256) {
+        return reviewContractBeta.getReviewsCount(_productId);
     }
 }

@@ -3,35 +3,23 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./library/ProductLibrary.sol";
-import "./library/BetaTestingDetailsLibrary.sol";
 
-contract Product is Ownable {
+contract LiveProduct is Ownable {
     using ProductLibrary for ProductLibrary.ProductDetails;
     using ProductLibrary for ProductLibrary.ProductInfo;
-    using ProductLibrary for ProductLibrary.ProductWithBetaTesting;
-
-    using BetaTestingDetailsLibrary for BetaTestingDetailsLibrary.BetaTestingDetails;
 
     uint256 private _productIdCounter;
     mapping(uint256 => ProductLibrary.ProductInfo) public products;
     mapping(uint256 => mapping(address => bool)) public hasUpvoted;
 
-    mapping(uint256 => BetaTestingDetailsLibrary.BetaTestingDetails)
-        public betaTestingDetails;
-
-    event ProductRegistered(
+    event LiveProductRegistered(
         uint256 indexed productId,
         address indexed owner,
         string productName,
         string description
     );
 
-    event ProductUpvoted(uint256 indexed productId, address indexed user);
-
-    event BetaTestingLinkUpdated(
-        uint256 indexed productId,
-        string betaTestingLink
-    );
+    event LiveProductUpvoted(uint256 indexed productId, address indexed user);
 
     constructor(address initialOwner) Ownable(initialOwner) {}
 
@@ -83,33 +71,22 @@ contract Product is Ownable {
         _;
     }
 
-    function registerProduct(
+    function registerLiveProduct(
         address _owner,
-        ProductLibrary.ProductDetails memory details,
-        bool betaTestingAvailable,
-        BetaTestingDetailsLibrary.BetaTestingDetails memory betaDetails
+        ProductLibrary.ProductDetails memory details
     ) public validProductDetails(details) {
         _productIdCounter++;
         uint256 productId = _productIdCounter;
-
-        if (betaTestingAvailable) {
-            require(
-                bytes(details.betaTestingLink).length > 0,
-                "Beta testing link required"
-            );
-            betaTestingDetails[productId] = betaDetails;
-        }
 
         products[productId] = ProductLibrary.ProductInfo({
             id: productId,
             owner: _owner,
             details: details,
             upvotes: 0,
-            betaTestingAvailable: betaTestingAvailable,
             timestamp: block.timestamp
         });
 
-        emit ProductRegistered(
+        emit LiveProductRegistered(
             productId,
             _owner,
             details.productName,
@@ -117,7 +94,7 @@ contract Product is Ownable {
         );
     }
 
-    function upvoteProduct(
+    function upvoteLiveProduct(
         uint256 productId,
         address upvoter
     )
@@ -129,51 +106,42 @@ contract Product is Ownable {
         products[productId].upvotes++;
         hasUpvoted[productId][upvoter] = true;
 
-        emit ProductUpvoted(productId, upvoter);
+        emit LiveProductUpvoted(productId, upvoter);
     }
 
-    function updateBetaTestingLink(
-        uint256 _productId,
-        string memory _betaTestingLink
-    ) public productExists(_productId) onlyProductOwner(_productId) {
-        products[_productId].details.betaTestingLink = _betaTestingLink;
-        products[_productId].betaTestingAvailable =
-            bytes(_betaTestingLink).length > 0;
-
-        emit BetaTestingLinkUpdated(_productId, _betaTestingLink);
-    }
-
-    function getProduct(
+    function getLiveProduct(
         uint256 _productId
     )
         public
         view
         productExists(_productId)
-        returns (ProductLibrary.ProductWithBetaTesting memory)
+        returns (ProductLibrary.ProductInfo memory)
     {
-        ProductLibrary.ProductWithBetaTesting memory productWithBetaTesting;
-        productWithBetaTesting.product = products[_productId];
-        productWithBetaTesting.hasBetaTestingDetails = products[_productId]
-            .betaTestingAvailable;
-        if (productWithBetaTesting.hasBetaTestingDetails) {
-            productWithBetaTesting.betaTestingDetails = betaTestingDetails[
-                _productId
-            ];
-        }
-        return productWithBetaTesting;
+        return products[_productId];
     }
 
-    function canBeListed(
-        uint256 _productId
-    ) public view productExists(_productId) returns (bool) {
-        ProductLibrary.ProductInfo memory product = products[_productId];
-        return block.timestamp >= product.timestamp + 24 hours;
-    }
-
-    function getListedProductsAvailable()
+    function getAllLiveProducts()
         public
         view
-        returns (ProductLibrary.ProductWithBetaTesting[] memory)
+        returns (ProductLibrary.ProductInfo[] memory)
+    {
+        uint256 totalProducts = _productIdCounter;
+        ProductLibrary.ProductInfo[]
+            memory allProducts = new ProductLibrary.ProductInfo[](
+                totalProducts
+            );
+
+        for (uint256 i = 1; i <= totalProducts; i++) {
+            allProducts[i - 1] = products[i];
+        }
+
+        return allProducts;
+    }
+
+    function getLiveProductsAfter24Hours()
+        public
+        view
+        returns (ProductLibrary.ProductInfo[] memory)
     {
         uint256 totalProducts = _productIdCounter;
         uint256 listedCount = 0;
@@ -186,8 +154,8 @@ contract Product is Ownable {
         }
 
         // Create an array to hold the listed products
-        ProductLibrary.ProductWithBetaTesting[]
-            memory listedProducts = new ProductLibrary.ProductWithBetaTesting[](
+        ProductLibrary.ProductInfo[]
+            memory listedProducts = new ProductLibrary.ProductInfo[](
                 listedCount
             );
         uint256 index = 0;
@@ -195,7 +163,7 @@ contract Product is Ownable {
         // Populate the array with the listed products
         for (uint256 i = 1; i <= totalProducts; i++) {
             if (canBeListed(i)) {
-                listedProducts[index] = getProduct(i);
+                listedProducts[index] = products[i];
                 index++;
             }
         }
@@ -203,29 +171,13 @@ contract Product is Ownable {
         return listedProducts;
     }
 
-    function getListedProducts()
-        public
-        view
-        returns (ProductLibrary.ProductWithBetaTesting[] memory)
-    {
-        uint256 totalProducts = _productIdCounter;
-
-        ProductLibrary.ProductWithBetaTesting[]
-            memory listedProducts = new ProductLibrary.ProductWithBetaTesting[](
-                totalProducts
-            );
-
-        for (uint256 i = 1; i <= totalProducts; i++) {
-            listedProducts[i - 1] = getProduct(i);
-        }
-
-        return listedProducts;
+    function canBeListed(uint256 _productId) public view returns (bool) {
+        return block.timestamp >= products[_productId].timestamp + 24 hours;
     }
 
-    function deleteProduct(
+    function deleteLiveProduct(
         uint256 _productId
     ) public productExists(_productId) onlyProductOwner(_productId) {
         delete products[_productId];
-        delete betaTestingDetails[_productId];
     }
 }

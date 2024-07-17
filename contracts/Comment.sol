@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "./Product.sol";
+import "./LiveProduct.sol";
 
 contract Comment {
     struct CommentInfo {
@@ -10,7 +10,7 @@ contract Comment {
         uint256 timestamp;
     }
 
-    Product private productContract;
+    LiveProduct private productContract;
     mapping(uint256 => CommentInfo[]) public productComments;
 
     event CommentAdded(
@@ -20,12 +20,12 @@ contract Comment {
     );
 
     constructor(address _productAddress) {
-        productContract = Product(_productAddress);
+        productContract = LiveProduct(_productAddress);
     }
 
     modifier productExists(uint256 _productId) {
         require(
-            productContract.getProduct(_productId).product.id == _productId,
+            productContract.getLiveProduct(_productId).id == _productId,
             "Product does not exist"
         );
         _;

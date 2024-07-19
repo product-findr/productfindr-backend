@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "./Product.sol";
 
-contract Comment {
+contract Comment is Initializable {
     struct CommentInfo {
         address commenter;
         string content;
@@ -19,8 +20,8 @@ contract Comment {
         string content
     );
 
-    constructor(address _productAddress) {
-        productContract = Product(_productAddress);
+    function initialize(address productAddress) public initializer {
+        productContract = Product(productAddress);
     }
 
     modifier productExists(uint256 _productId) {

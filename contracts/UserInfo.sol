@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-contract UserInfo {
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+
+contract UserInfo is Initializable, OwnableUpgradeable {
     struct User {
         string username;
         string email;
@@ -17,6 +20,10 @@ contract UserInfo {
     event UserUpdated(address indexed userAddress, string username);
     event UserInterestsUpdated(address indexed userAddress, string[] interests);
     event UserDeleted(address indexed userAddress);
+
+    function initialize(address initialOwner) public initializer {
+        __Ownable_init(initialOwner);
+    }
 
     modifier onlyExistingUser(address userAddress) {
         require(

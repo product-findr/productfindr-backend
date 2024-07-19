@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "./library/ProductLibrary.sol";
 import "./library/BetaTestingDetailsLibrary.sol";
 
-contract Product is Ownable {
+contract Product is Initializable, OwnableUpgradeable {
     using ProductLibrary for ProductLibrary.ProductDetails;
     using ProductLibrary for ProductLibrary.ProductInfo;
     using ProductLibrary for ProductLibrary.ProductWithBetaTesting;
@@ -25,15 +26,16 @@ contract Product is Ownable {
         string productName,
         string description
     );
-
     event ProductUpvoted(uint256 indexed productId, address indexed user);
-
     event BetaTestingLinkUpdated(
         uint256 indexed productId,
         string betaTestingLink
     );
 
-    constructor(address initialOwner) Ownable(initialOwner) {}
+    function initialize(address initialOwner) public initializer {
+        __Ownable_init(initialOwner);
+        transferOwnership(initialOwner);
+    }
 
     modifier productExists(uint256 _productId) {
         require(

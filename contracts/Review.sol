@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "./Product.sol";
 
-contract Review {
+contract Review is Initializable {
     struct ReviewInfo {
         address reviewer;
         string content;
@@ -22,8 +23,8 @@ contract Review {
         uint256 rating
     );
 
-    constructor(address _productAddress) {
-        productContract = Product(_productAddress);
+    function initialize(address productAddress) public initializer {
+        productContract = Product(productAddress);
     }
 
     modifier productExists(uint256 _productId) {
@@ -89,7 +90,7 @@ contract Review {
                 timestamp: block.timestamp
             })
         );
-        hasReviewed[_productId][_reviewer] = true; // Mark as reviewed
+        hasReviewed[_productId][_reviewer] = true;
 
         emit ReviewAdded(_productId, _reviewer, _content, _rating);
     }

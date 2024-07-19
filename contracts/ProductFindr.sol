@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "./Product.sol";
 import "./Comment.sol";
 import "./Review.sol";
@@ -9,7 +10,7 @@ import "./BetaTestingDetailsManager.sol";
 import "./library/ProductLibrary.sol";
 import "./library/BetaTestingDetailsLibrary.sol";
 
-contract ProductFindr is Ownable {
+contract ProductFindr is Initializable, OwnableUpgradeable {
     Product private productContract;
     Comment private commentContract;
     Review private reviewContract;
@@ -19,19 +20,21 @@ contract ProductFindr is Ownable {
 
     event UserReputationUpdated(address indexed user, uint256 reputation);
 
-    constructor(
-        address _productAddress,
-        address _commentAddress,
-        address _reviewAddress,
-        address _betaTestingManagerAddress,
+    function initialize(
+        address productAddress,
+        address commentAddress,
+        address reviewAddress,
+        address betaTestingManagerAddress,
         address initialOwner
-    ) Ownable(initialOwner) {
-        productContract = Product(_productAddress);
-        commentContract = Comment(_commentAddress);
-        reviewContract = Review(_reviewAddress);
+    ) public initializer {
+        __Ownable_init(initialOwner);
+        productContract = Product(productAddress);
+        commentContract = Comment(commentAddress);
+        reviewContract = Review(reviewAddress);
         betaTestingManager = BetaTestingDetailsManager(
-            _betaTestingManagerAddress
+            betaTestingManagerAddress
         );
+        transferOwnership(initialOwner);
     }
 
     modifier reviewExists(uint256 _productId, uint256 _reviewId) {

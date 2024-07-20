@@ -4,5 +4,18 @@
   "UpgradeModule#Product": "0xDC2eA9be99F05Ff6baC650c832e78f6b884337e7",
   "UpgradeModule#ProductFindr": "0x2C19194db0321DEa6F1A792a0Ffe431Db38f80De",
   "UpgradeModule#Review": "0x6B9ee4Ae432ffE426491FeA0032aE350FD9fFE85",
-  "UpgradeModule#UserInfo": "0xebf50136278615D72015b16901e9b58f03F2aA63"
+  "UpgradeModule#UserInfo": "0xebf50136278615D72015b16901e9b58f03F2aA63",
+  "DeployModule#BetaTestingDetailsManager": "0x0B9bC8Ae0cC8520f7ad1dC4dA1Ae1362BCe0B484",
+  "DeployModule#Comment": "0xFE6620c5557DDD0090DBC594788A92c0Bc160951",
+  "DeployModule#Product": "0x405CC77E7C655bD60AaD6AB3C60182c62077F77B",
+  "DeployModule#ProductFindr": "0x918CE2A5D110256F0e1e659C0655263aD53778B7",
+  "DeployModule#Review": "0xe4c709FFFff5DbB70d51D691bbab7f9881b727a5",
+  "DeployModule#UserInfo": "0xd3eF4c3eD9a33c2efFD58271A49C16916bE77a3f",
+  "MinimalModule#BetaTestingDetailsManager": "0x9f5F219d14C2a331A32195DEbF212b55aFa5e929",
+  "MultiContractModule#BetaTestingDetailsManager": "0xa8bf699bc38464F6f0cFb38E5AB46a0d35787D43",
+  "MultiContractModule#Comment": "0xc019C539076E94cB8f7EA1CA99BB7D97B54Bee58",
+  "MultiContractModule#Product": "0x8eEcBeC9a4dcc745EF00A73dcbe9dB23dEB598Bb",
+  "MultiContractModule#ProductFindr": "0xe5f05c39BFf8efb465b573fD53D5556667743046",
+  "MultiContractModule#Review": "0x82dfB16AD71895e8653361EaD11eA33851e9617d",
+  "MultiContractModule#UserInfo": "0x02DCeB4510282A3D852d09231dEA7cd2B7c4782A"
 }

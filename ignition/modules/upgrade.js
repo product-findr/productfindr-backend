@@ -1,43 +1,25 @@
 const { buildModule } = require("@nomicfoundation/hardhat-ignition/modules");
 
-module.exports = buildModule("UpgradeModule", (m) => {
-  console.log("Starting upgrade process...");
-
-  const upgradeContract = (contractName) => {
-    console.log(`Upgrading ${contractName}...`);
-
-    // Deploy new implementation
-    const newImpl = m.contract(contractName);
-    console.log(`Deployed new ${contractName} implementation`);
-
-    // Try to upgrade the proxy
-    try {
-      const proxyAddress = `DeployModule#${contractName}.proxy`;
-      m.call(proxyAddress, "upgradeTo", [newImpl]);
-      console.log(`Upgrading ${contractName} proxy...`);
-    } catch (error) {
-      console.error(`Failed to upgrade ${contractName}: ${error.message}`);
-    }
-
-    return newImpl;
-  };
+module.exports = buildModule("MultiContractModule", (m) => {
+  console.log("Starting multi-contract deployment process...");
 
   const contracts = [
     "BetaTestingDetailsManager",
-    "Product",
     "Comment",
+    "Product",
+    "ProductFindr",
     "Review",
     "UserInfo",
-    "ProductFindr",
   ];
 
-  const upgradedContracts = {};
+  const deployedContracts = {};
 
   for (const contractName of contracts) {
-    upgradedContracts[contractName] = upgradeContract(contractName);
+    console.log(`Deploying ${contractName}...`);
+    deployedContracts[contractName] = m.contract(contractName);
+    console.log(`${contractName} deployment prepared.`);
   }
 
-  console.log("Upgrade process initiated for all contracts!");
-
-  return upgradedContracts;
+  console.log("Multi-contract deployment process completed!");
+  return deployedContracts;
 });

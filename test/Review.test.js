@@ -397,4 +397,30 @@ describe("Review", function () {
     expect(updatedReview.content).to.equal("Updated review!");
     expect(updatedReview.rating).to.equal(4);
   });
+
+  it("Should revert if reviewer tries to review a product twice", async function () {
+    const { product, review, owner, reviewer1 } = await loadFixture(
+      deployContractsFixture
+    );
+
+    const betaTestingAvailable = false;
+    await product
+      .connect(owner)
+      .registerProduct(
+        owner.address,
+        productDetailsWithoutBetaTesting,
+        betaTestingAvailable,
+        betaTestingDetails
+      );
+
+    await review
+      .connect(reviewer1)
+      .addReview(reviewer1.address, 1, "Great product!", 5);
+
+    await expect(
+      review
+        .connect(reviewer1)
+        .addReview(reviewer1.address, 1, "Another review!", 4)
+    ).to.be.revertedWith("Reviewer has already reviewed this product");
+  });
 });

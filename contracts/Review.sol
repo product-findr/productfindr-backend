@@ -13,7 +13,7 @@ contract Review {
 
     Product private productContract;
     mapping(uint256 => ReviewInfo[]) public productReviews;
-    mapping(uint256 => mapping(address => bool)) public hasReviewed; // Add this mapping to track reviews
+    mapping(uint256 => mapping(address => bool)) public hasReviewed;
 
     event ReviewAdded(
         uint256 indexed productId,
@@ -34,14 +34,6 @@ contract Review {
         _;
     }
 
-    modifier reviewExists(uint256 _productId, uint256 _reviewId) {
-        require(
-            _reviewId < productReviews[_productId].length,
-            "Review does not exist"
-        );
-        _;
-    }
-
     modifier validRating(uint256 _rating) {
         require(_rating > 0 && _rating <= 5, "Rating must be between 1 and 5");
         _;
@@ -49,22 +41,6 @@ contract Review {
 
     modifier nonEmptyContent(string memory _content) {
         require(bytes(_content).length > 0, "Review content cannot be empty");
-        _;
-    }
-
-    modifier notProductOwner(uint256 _productId, address _reviewer) {
-        require(
-            productContract.getProduct(_productId).product.owner != _reviewer,
-            "Product owner cannot review their own product"
-        );
-        _;
-    }
-
-    modifier hasNotReviewed(uint256 _productId, address _reviewer) {
-        require(
-            !hasReviewed[_productId][_reviewer],
-            "Reviewer has already reviewed this product"
-        );
         _;
     }
 
@@ -78,9 +54,17 @@ contract Review {
         productExists(_productId)
         validRating(_rating)
         nonEmptyContent(_content)
-        notProductOwner(_productId, _reviewer)
-        hasNotReviewed(_productId, _reviewer)
     {
+        // Combine checks to reduce stack depth
+        require(
+            productContract.getProduct(_productId).product.owner != _reviewer,
+            "Product owner cannot review their own product"
+        );
+        require(
+            !hasReviewed[_productId][_reviewer],
+            "Reviewer has already reviewed this product"
+        );
+
         productReviews[_productId].push(
             ReviewInfo({
                 reviewer: _reviewer,
@@ -104,8 +88,13 @@ contract Review {
         productExists(_productId)
         validRating(_rating)
         nonEmptyContent(_content)
-        notProductOwner(_productId, _reviewer)
     {
+        // Combine checks to reduce stack depth
+        require(
+            productContract.getProduct(_productId).product.owner != _reviewer,
+            "Product owner cannot review their own product"
+        );
+
         ReviewInfo[] storage reviews = productReviews[_productId];
         for (uint256 i = 0; i < reviews.length; i++) {
             if (reviews[i].reviewer == _reviewer) {
@@ -127,26 +116,22 @@ contract Review {
     function getReview(
         uint256 _productId,
         uint256 _reviewId
-    )
-        public
-        view
-        productExists(_productId)
-        reviewExists(_productId, _reviewId)
-        returns (ReviewInfo memory)
-    {
+    ) public view productExists(_productId) returns (ReviewInfo memory) {
+        require(
+            _reviewId < productReviews[_productId].length,
+            "Review does not exist"
+        );
         return productReviews[_productId][_reviewId];
     }
 
     function getReviewer(
         uint256 _productId,
         uint256 _reviewId
-    )
-        public
-        view
-        productExists(_productId)
-        reviewExists(_productId, _reviewId)
-        returns (address)
-    {
+    ) public view productExists(_productId) returns (address) {
+        require(
+            _reviewId < productReviews[_productId].length,
+            "Review does not exist"
+        );
         return productReviews[_productId][_reviewId].reviewer;
     }
 
